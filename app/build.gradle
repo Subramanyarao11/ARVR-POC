@@ -1,0 +1,60 @@
+plugins {
+    id 'com.android.application'
+    id 'com.google.ar.sceneform.plugin'
+}
+
+android {
+    namespace 'com.example.draw'
+    compileSdkVersion 29
+
+    defaultConfig {
+        applicationId "com.example.draw"
+        minSdkVersion 24
+        targetSdkVersion 29
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        customDebugType {
+            debuggable true
+        }
+
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'androidx.appcompat:appcompat:1.0.2'
+//    implementation 'com.google.android.material:material:1.5.0'
+    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+//    implementation 'com.google.ar:core:1.41.0'
+//    implementation("com.gorisse.thomas.sceneform:core:1.18.8")
+//    implementation("com.gorisse.thomas.sceneform:ux:1.18.8")
+    implementation "com.google.ar.sceneform.ux:sceneform-ux:1.17.1"
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+}
+apply plugin: 'com.google.ar.sceneform.plugin'
+
+sceneform.asset('sampledata/pole.FBX',
+        'default',
+        'sampledata/pole.sfa',
+        'src/main/assets/pole')
+
+
+sceneform.asset('sampledata/clinder.FBX',
+        'default',
+        'sampledata/clinder.sfa',
+        'src/main/assets/clinder')
