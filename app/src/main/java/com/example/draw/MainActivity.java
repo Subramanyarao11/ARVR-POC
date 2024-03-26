@@ -5,8 +5,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
+import android.view.PixelCopy;
+import android.view.View;
+import android.widget.Button;
 import android.widget.Toast;
 
 import com.google.ar.core.Anchor;
@@ -15,6 +22,10 @@ import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.TransformableNode;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,19 +33,18 @@ import com.google.ar.sceneform.ArSceneView;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int PERMISSIONS_REQUEST_CODE = 123;
-
     private ArSceneView arSceneView;
     private ArFragment arFragment;
 
     private static final String TAG = MainActivity.class.getSimpleName();
     private final List<AnchorNode> anchorNodes = new ArrayList<>();
 
-//        private final List<Node> anchorNodes = new ArrayList<>();
 
     private ModelRenderable andyRenderable;
 
     private static final double MIN_OPENGL_VERSION = 3.0;
+
+    private Button captureButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +66,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
         setContentView(R.layout.activity_main);
+
+        captureButton = findViewById(R.id.captureButton);
+        captureButton.setOnClickListener(v -> {
+            Log.d(TAG, "Capture button clicked");
+            capturePhoto();
+        });
 
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.arFragment);
         assert arFragment != null;
@@ -80,8 +96,10 @@ public class MainActivity extends AppCompatActivity {
 
             if(anchorNodes.size() >= 4){
                 Toast.makeText(this, "Only 4 nodes are allowed", Toast.LENGTH_SHORT).show();
+                captureButton.setVisibility(View.VISIBLE);
                 return;
             }
+
             Anchor anchor = hitResult.createAnchor();
             AnchorNode anchorNode = new AnchorNode(anchor);
             anchorNode.setParent(arFragment.getArSceneView().getScene());
@@ -115,5 +133,30 @@ public class MainActivity extends AppCompatActivity {
         }
         return true;
     }
+
+
+    private void capturePhoto() {
+        ArSceneView view = arFragment.getArSceneView();
+        Log.d(TAG, "CapturePhoto method called!");
+        final Bitmap bitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);
+
+        PixelCopy.request(view, bitmap, (copyResult) -> {
+            if (copyResult == PixelCopy.SUCCESS) {
+                File photoFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+                        "ARScene_" + System.currentTimeMillis() + ".png");
+                try (FileOutputStream out = new FileOutputStream(photoFile)) {
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
+                    // PNG is a lossless format, the compression factor (100) is ignored
+                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "Photo saved to " + photoFile.getAbsolutePath(), Toast.LENGTH_LONG).show());
+                } catch (IOException e) {
+                    Log.e(TAG, "Unable to save image to file.", e);
+                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "Failed to save photo", Toast.LENGTH_SHORT).show());
+                }
+            } else {
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, "Failed to capture photo", Toast.LENGTH_SHORT).show());
+            }
+        }, new Handler(Looper.getMainLooper()));
+    }
+
 
 }
