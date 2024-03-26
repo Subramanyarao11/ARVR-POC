@@ -58,3 +58,9 @@ sceneform.asset('sampledata/clinder.FBX',
         'default',
         'sampledata/clinder.sfa',
         'src/main/assets/clinder')
+
+
+sceneform.asset('sampledata/cube.fbx',
+        'default',
+        'sampledata/cube.sfa',
+        'src/main/assets/cube')

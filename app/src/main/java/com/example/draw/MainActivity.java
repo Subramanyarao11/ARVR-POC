@@ -80,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
         arSceneView = arFragment.getArSceneView();
 
         ModelRenderable.builder()
-                .setSource(this, R.raw.pole)
+                .setSource(this, R.raw.cube)
 //                    .setIsFilamentGltf(true)
                 .build()
                 .thenAccept(renderable -> andyRenderable = renderable)
@@ -111,8 +111,11 @@ public class MainActivity extends AppCompatActivity {
             andy.setParent(anchorNode);
             andy.setRenderable(andyRenderable);
             // change this vector to alter size of the model
-//                andy.setLocalScale(new Vector3(0.3f, 0.3f, 0.3f));
-            andy.setLocalScale(new Vector3(0.3f, 0.05f, 0.3f));
+            // For pole
+//            andy.setLocalScale(new Vector3(0.3f, 0.05f, 0.3f));
+
+            // for cube
+            andy.setLocalScale(new Vector3(0.1f, 0.1f, 0.1f));
             andy.select();
             andy.getScaleController().setEnabled(false);
         });
@@ -146,6 +149,14 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void capturePhoto() {
+        // hide feature points
+        arFragment.getArSceneView().getPlaneRenderer().setVisible(false);
+
+        // Hide the models (anchor nodes)
+        for (AnchorNode anchorNode : anchorNodes) {
+            anchorNode.setEnabled(false);
+        }
+
         // Initialize bounds
         int minX = Integer.MAX_VALUE;
         int minY = Integer.MAX_VALUE;
@@ -177,6 +188,13 @@ public class MainActivity extends AppCompatActivity {
         final Bitmap bitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);
 
         PixelCopy.request(view, bitmap, (copyResult) -> {
+            // Immediately after capturing, restore feature points and models visibility
+            runOnUiThread(() -> {
+                arFragment.getArSceneView().getPlaneRenderer().setVisible(true);
+                for (AnchorNode anchorNode : anchorNodes) {
+                    anchorNode.setEnabled(true);
+                }
+            });
             if (copyResult == PixelCopy.SUCCESS) {
                 // Crop the bitmap
                 Bitmap croppedBitmap = Bitmap.createBitmap(bitmap, x, y, width, height);
