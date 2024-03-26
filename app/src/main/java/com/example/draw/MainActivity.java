@@ -100,9 +100,14 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
 
-            if(anchorNodes.size() >= 4){
-                Toast.makeText(this, "Only 4 nodes are allowed", Toast.LENGTH_SHORT).show();
+            // Check after adding a new node if we've reached the limit
+            if (anchorNodes.size() == 4) {
+                Toast.makeText(this, "Maximum of 4 models placed. Ready to capture!", Toast.LENGTH_SHORT).show();
                 captureButton.setVisibility(View.VISIBLE);
+            }
+
+            if (anchorNodes.size() >= 4) {
+                Toast.makeText(this, "Only 4 nodes are allowed", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -117,7 +122,6 @@ public class MainActivity extends AppCompatActivity {
             // change this vector to alter size of the model
             // For pole
 //            andy.setLocalScale(new Vector3(0.3f, 0.05f, 0.3f));
-
             // for cube
             andy.setLocalScale(new Vector3(0.1f, 0.1f, 0.1f));
             andy.select();
