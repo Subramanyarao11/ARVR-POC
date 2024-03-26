@@ -4,13 +4,16 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.content.ContentValues;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Point;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.PixelCopy;
 import android.view.View;
@@ -28,6 +31,7 @@ import com.google.ar.sceneform.ux.TransformableNode;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -192,17 +196,29 @@ public class MainActivity extends AppCompatActivity {
         }, new Handler(Looper.getMainLooper()));
     }
 
-    private void saveBitmapToFile(Bitmap bitmap) {
-        File photoFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
-                "ARScene_" + System.currentTimeMillis() + ".png");
-        try (FileOutputStream out = new FileOutputStream(photoFile)) {
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out); // PNG is a lossless format, the compression factor (100) is ignored
-            runOnUiThread(() -> Toast.makeText(MainActivity.this, "Photo saved to " + photoFile.getAbsolutePath(), Toast.LENGTH_LONG).show());
+private void saveBitmapToFile(Bitmap bitmap) {
+    // Define the file attributes
+    String displayName = "ARScene_" + System.currentTimeMillis() + ".png";
+    ContentValues values = new ContentValues();
+    values.put(MediaStore.MediaColumns.DISPLAY_NAME, displayName);
+    values.put(MediaStore.MediaColumns.MIME_TYPE, "image/png");
+    // For images saved to the Pictures directory
+    values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES);
+
+    // Insert the metadata to the MediaStore and get the Uri
+    Uri uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+    if (uri != null) {
+        try (OutputStream out = getContentResolver().openOutputStream(uri)) {
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+            Log.d(TAG, "Photo saved to " + uri.toString());
+            runOnUiThread(() -> Toast.makeText(MainActivity.this, "Photo saved to " + uri.toString(), Toast.LENGTH_LONG).show());
         } catch (IOException e) {
             Log.e(TAG, "Unable to save image to file.", e);
             runOnUiThread(() -> Toast.makeText(MainActivity.this, "Failed to save photo", Toast.LENGTH_SHORT).show());
         }
     }
+}
+
 
 
     private void hideARFeatures() {
