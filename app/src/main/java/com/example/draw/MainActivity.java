@@ -6,6 +6,7 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Point;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -18,6 +19,7 @@ import android.widget.Toast;
 
 import com.google.ar.core.Anchor;
 import com.google.ar.sceneform.AnchorNode;
+import com.google.ar.sceneform.Camera;
 import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.ux.ArFragment;
@@ -134,29 +136,66 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
+    private Point worldToScreenPoint(Vector3 worldPoint) {
+        Camera camera = arFragment.getArSceneView().getScene().getCamera();
+        Vector3 screenPoint = camera.worldToScreenPoint(worldPoint);
+        return new Point((int) screenPoint.x, (int) screenPoint.y);
+    }
+
+
+
 
     private void capturePhoto() {
+        // Initialize bounds
+        int minX = Integer.MAX_VALUE;
+        int minY = Integer.MAX_VALUE;
+        int maxX = -1;
+        int maxY = -1;
+
+        // Calculate bounds
+        for (AnchorNode anchorNode : anchorNodes) {
+            Point screenPoint = worldToScreenPoint(anchorNode.getWorldPosition());
+            if (screenPoint.x < minX) minX = screenPoint.x;
+            if (screenPoint.y < minY) minY = screenPoint.y;
+            if (screenPoint.x > maxX) maxX = screenPoint.x;
+            if (screenPoint.y > maxY) maxY = screenPoint.y;
+        }
+
+        // Ensure the bounds are within the screen
+        minX = Math.max(minX, 0);
+        minY = Math.max(minY, 0);
+        maxX = Math.min(maxX, arFragment.getArSceneView().getWidth());
+        maxY = Math.min(maxY, arFragment.getArSceneView().getHeight());
+
+        // Now we have minX, minY, maxX, maxY as the bounds
+        captureAndCrop(minX, minY, maxX - minX, maxY - minY);
+    }
+
+
+    private void captureAndCrop(int x, int y, int width, int height) {
         ArSceneView view = arFragment.getArSceneView();
-        Log.d(TAG, "CapturePhoto method called!");
         final Bitmap bitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);
 
         PixelCopy.request(view, bitmap, (copyResult) -> {
             if (copyResult == PixelCopy.SUCCESS) {
-                File photoFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
-                        "ARScene_" + System.currentTimeMillis() + ".png");
-                try (FileOutputStream out = new FileOutputStream(photoFile)) {
-                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, out); // bmp is your Bitmap instance
-                    // PNG is a lossless format, the compression factor (100) is ignored
-                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "Photo saved to " + photoFile.getAbsolutePath(), Toast.LENGTH_LONG).show());
-                } catch (IOException e) {
-                    Log.e(TAG, "Unable to save image to file.", e);
-                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "Failed to save photo", Toast.LENGTH_SHORT).show());
-                }
+                // Crop the bitmap
+                Bitmap croppedBitmap = Bitmap.createBitmap(bitmap, x, y, width, height);
+                saveBitmapToFile(croppedBitmap); // Implement this method to save the cropped bitmap
             } else {
                 runOnUiThread(() -> Toast.makeText(MainActivity.this, "Failed to capture photo", Toast.LENGTH_SHORT).show());
             }
         }, new Handler(Looper.getMainLooper()));
     }
 
-
+    private void saveBitmapToFile(Bitmap bitmap) {
+        File photoFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+                "ARScene_" + System.currentTimeMillis() + ".png");
+        try (FileOutputStream out = new FileOutputStream(photoFile)) {
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out); // PNG is a lossless format, the compression factor (100) is ignored
+            runOnUiThread(() -> Toast.makeText(MainActivity.this, "Photo saved to " + photoFile.getAbsolutePath(), Toast.LENGTH_LONG).show());
+        } catch (IOException e) {
+            Log.e(TAG, "Unable to save image to file.", e);
+            runOnUiThread(() -> Toast.makeText(MainActivity.this, "Failed to save photo", Toast.LENGTH_SHORT).show());
+        }
+    }
 }
