@@ -27,9 +27,6 @@ import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.TransformableNode;
-
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -39,7 +36,6 @@ import com.google.ar.sceneform.ArSceneView;
 
 public class MainActivity extends AppCompatActivity {
 
-    private ArSceneView arSceneView;
     private ArFragment arFragment;
 
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -81,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
 
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.arFragment);
         assert arFragment != null;
-        arSceneView = arFragment.getArSceneView();
+        ArSceneView arSceneView = arFragment.getArSceneView();
 
         ModelRenderable.builder()
                 .setSource(this, R.raw.cube)
@@ -155,7 +151,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void capturePhoto() {
-        hideARFeatures();
+//        hideARFeatures();
         // Delay the capture to ensure visibility changes have time to take effect
         new Handler(Looper.getMainLooper()).postDelayed(this::captureAndCropWithBoundsCalculation, 100);
     }
@@ -189,7 +185,7 @@ public class MainActivity extends AppCompatActivity {
         final Bitmap bitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);
 
         PixelCopy.request(view, bitmap, (copyResult) -> {
-            restoreARFeatures();
+//            restoreARFeatures();
             if (copyResult == PixelCopy.SUCCESS) {
                 // Crop the bitmap
                 Bitmap croppedBitmap = Bitmap.createBitmap(bitmap, x, y, width, height);
