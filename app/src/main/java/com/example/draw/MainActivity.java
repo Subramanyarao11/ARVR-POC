@@ -8,6 +8,8 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Point;
+import android.graphics.Rect;
+import android.media.Image;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -15,24 +17,33 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.view.OrientationEventListener;
 import android.view.PixelCopy;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
-import com.google.ar.core.Anchor;
+import com.google.ar.core.Frame;
+import com.google.ar.core.TrackingState;
+import com.google.ar.core.exceptions.NotYetAvailableException;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.Camera;
 import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.ux.ArFragment;
-import com.google.ar.sceneform.ux.TransformableNode;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.google.ar.sceneform.ArSceneView;
+import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.objects.DetectedObject;
+import com.google.mlkit.vision.objects.ObjectDetection;
+import com.google.mlkit.vision.objects.ObjectDetector;
+import com.google.mlkit.vision.objects.ObjectDetectorOptionsBase;
+import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -47,6 +58,15 @@ public class MainActivity extends AppCompatActivity {
     private static final double MIN_OPENGL_VERSION = 3.0;
 
     private Button captureButton;
+
+    // Object Detection
+    private ObjectDetector objectDetector;
+    private GraphicOverlay graphicOverlay; // For drawing bounding boxes
+    private boolean needUpdateGraphicOverlayImageSourceInfo;
+
+
+    private int rotationDegrees = 0;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,6 +89,10 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
+//       setup orientation listener
+        setupOrientationListener();
+
+
         captureButton = findViewById(R.id.captureButton);
         captureButton.setOnClickListener(v -> {
             Log.d(TAG, "Capture button clicked");
@@ -79,50 +103,63 @@ public class MainActivity extends AppCompatActivity {
         assert arFragment != null;
         ArSceneView arSceneView = arFragment.getArSceneView();
 
-        ModelRenderable.builder()
-                .setSource(this, R.raw.cube)
-//                    .setIsFilamentGltf(true)
-                .build()
-                .thenAccept(renderable -> andyRenderable = renderable)
-                .exceptionally(throwable -> {
-                    Log.e(TAG, "Unable to load ModelRenderable", throwable);
-                    Toast.makeText(MainActivity.this, "Unable to load model", Toast.LENGTH_SHORT).show();
-                    return null;
-                });
+        // Object Detection Setup
+        graphicOverlay = findViewById(R.id.graphic_overlay); // Initialize graphicOverlay
+        createObjectDetector(); // Create the object detector
 
-//
         arFragment.setOnTapArPlaneListener((hitResult, plane, motionEvent) -> {
-            if (andyRenderable == null) {
+            if (objectDetector == null) {
                 return;
             }
 
-            // Check after adding a new node if we've reached the limit
-            if (anchorNodes.size() == 4) {
-                Toast.makeText(this, "Maximum of 4 models placed. Ready to capture!", Toast.LENGTH_SHORT).show();
-                captureButton.setVisibility(View.VISIBLE);
+            // Get the current frame from the AR Scene and check if it's not null
+            Frame frame = arSceneView.getArFrame();
+            if (frame != null && frame.getCamera().getTrackingState() == TrackingState.TRACKING) {
+                try {
+                    // Attempt to acquire the camera image
+                    Image image = frame.acquireCameraImage();
+                    if (image != null) {
+                        InputImage inputImage = InputImage.fromMediaImage(image, rotationDegrees);
+
+                        // Process the image with the object detector
+                        objectDetector.process(inputImage)
+                                .addOnSuccessListener(
+                                        detectedObjects -> {
+                                            // Clear previous bounding boxes
+                                            graphicOverlay.clear();
+
+                                            // Update graphicOverlay size if needed
+                                            if (needUpdateGraphicOverlayImageSourceInfo) {
+                                                graphicOverlay.setImageSourceInfo(
+                                                        inputImage.getWidth(), inputImage.getHeight(), false);
+                                                needUpdateGraphicOverlayImageSourceInfo = false;
+                                            }
+
+                                            // Draw bounding boxes for detected objects
+                                            for (DetectedObject detectedObject : detectedObjects) {
+                                                graphicOverlay.add(new ObjectGraphic(graphicOverlay, detectedObject));
+                                            }
+
+                                            // Show capture button if an object is detected
+                                            if (detectedObjects.size() > 0) {
+                                                DetectedObject firstObject = detectedObjects.get(0);
+                                                captureAndCrop(firstObject.getBoundingBox());
+
+                                                captureButton.setVisibility(View.VISIBLE);
+                                            }
+
+                                            graphicOverlay.postInvalidate();
+                                        })
+                                .addOnFailureListener(e -> Log.e(TAG, "Error running object detection", e))
+                                .addOnCompleteListener(task -> image.close()); // Ensure to close the image
+                    }
+                } catch (NotYetAvailableException e) {
+                    Log.e(TAG, "Camera image not yet available. Please try again.", e);
+                }
             }
-
-            if (anchorNodes.size() >= 4) {
-                Toast.makeText(this, "Only 4 nodes are allowed", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            Anchor anchor = hitResult.createAnchor();
-            AnchorNode anchorNode = new AnchorNode(anchor);
-            anchorNode.setParent(arFragment.getArSceneView().getScene());
-            anchorNodes.add(anchorNode);
-
-            TransformableNode andy = new TransformableNode(arFragment.getTransformationSystem());
-            andy.setParent(anchorNode);
-            andy.setRenderable(andyRenderable);
-            // change this vector to alter size of the model
-            // For pole
-//            andy.setLocalScale(new Vector3(0.3f, 0.05f, 0.3f));
-            // for cube
-            andy.setLocalScale(new Vector3(0.1f, 0.1f, 0.1f));
-            andy.select();
-            andy.getScaleController().setEnabled(false);
         });
+
+
     }
 
 
@@ -180,16 +217,37 @@ public class MainActivity extends AppCompatActivity {
         captureAndCrop(minX, minY, maxX - minX, maxY - minY);
     }
 
-    private void captureAndCrop(int x, int y, int width, int height) {
+//    private void captureAndCrop(int x, int y, int width, int height) {
+//        ArSceneView view = arFragment.getArSceneView();
+//        final Bitmap bitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);
+//
+//        PixelCopy.request(view, bitmap, (copyResult) -> {
+////            restoreARFeatures();
+//            if (copyResult == PixelCopy.SUCCESS) {
+//                // Crop the bitmap
+//                Bitmap croppedBitmap = Bitmap.createBitmap(bitmap, x, y, width, height);
+//                saveBitmapToFile(croppedBitmap); // Implement this method to save the cropped bitmap
+//            } else {
+//                runOnUiThread(() -> Toast.makeText(MainActivity.this, "Failed to capture photo", Toast.LENGTH_SHORT).show());
+//            }
+//        }, new Handler(Looper.getMainLooper()));
+//    }
+
+    private void captureAndCrop(Rect boundingBox) { // Pass the bounding box as a parameter
         ArSceneView view = arFragment.getArSceneView();
         final Bitmap bitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);
 
         PixelCopy.request(view, bitmap, (copyResult) -> {
-//            restoreARFeatures();
             if (copyResult == PixelCopy.SUCCESS) {
-                // Crop the bitmap
+                // Convert bounding box coordinates to screen coordinates
+                int x = (int) translateX(boundingBox.left);
+                int y = (int) translateY(boundingBox.top);
+                int width = (int) (boundingBox.right - boundingBox.left);
+                int height = (int) (boundingBox.bottom - boundingBox.top);
+
+                // Crop the bitmap using the bounding box coordinates
                 Bitmap croppedBitmap = Bitmap.createBitmap(bitmap, x, y, width, height);
-                saveBitmapToFile(croppedBitmap); // Implement this method to save the cropped bitmap
+                saveBitmapToFile(croppedBitmap);
             } else {
                 runOnUiThread(() -> Toast.makeText(MainActivity.this, "Failed to capture photo", Toast.LENGTH_SHORT).show());
             }
@@ -235,5 +293,40 @@ private void saveBitmapToFile(Bitmap bitmap) {
                 anchorNode.setEnabled(true);
             }
         });
+    }
+
+    private void setupOrientationListener() {
+        OrientationEventListener orientationEventListener = new OrientationEventListener(this) {
+            @Override
+            public void onOrientationChanged(int orientation) {
+                if (orientation >= 45 && orientation < 135) {
+                    rotationDegrees = 270; // Reverse landscape
+                } else if (orientation >= 135 && orientation < 225) {
+                    rotationDegrees = 180; // Reverse portrait
+                } else if (orientation >= 225 && orientation < 315) {
+                    rotationDegrees = 90; // Landscape
+                } else {
+                    rotationDegrees = 0; // Portrait
+                }
+            }
+        };
+
+        if (orientationEventListener.canDetectOrientation()) {
+            orientationEventListener.enable();
+        } else {
+            Log.d(TAG, "Orientation sensor not available.");
+        }
+    }
+
+
+    private void createObjectDetector() {
+        // Use the default options for object detection
+        ObjectDetectorOptionsBase options =
+                new ObjectDetectorOptions.Builder()
+                        .setDetectorMode(ObjectDetectorOptions.SINGLE_IMAGE_MODE)
+                        .enableMultipleObjects()
+                        .enableClassification()
+                        .build();
+        objectDetector = ObjectDetection.getClient(options);
     }
 }

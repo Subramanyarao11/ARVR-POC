@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Draw</string>
+    <string name="capture_photo">Capture Photo</string>
 </resources>
