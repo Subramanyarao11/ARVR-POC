@@ -119,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
             // For pole
 //            andy.setLocalScale(new Vector3(0.3f, 0.05f, 0.3f));
             // for cube
-            andy.setLocalScale(new Vector3(0.1f, 0.1f, 0.1f));
+            andy.setLocalScale(new Vector3(0.05f, 0.05f, 0.05f));
             andy.select();
             andy.getScaleController().setEnabled(false);
         });
@@ -151,7 +151,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void capturePhoto() {
-//        hideARFeatures();
+        hideARFeatures();
         // Delay the capture to ensure visibility changes have time to take effect
         new Handler(Looper.getMainLooper()).postDelayed(this::captureAndCropWithBoundsCalculation, 100);
     }
@@ -185,7 +185,7 @@ public class MainActivity extends AppCompatActivity {
         final Bitmap bitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);
 
         PixelCopy.request(view, bitmap, (copyResult) -> {
-//            restoreARFeatures();
+            restoreARFeatures();
             if (copyResult == PixelCopy.SUCCESS) {
                 // Crop the bitmap
                 Bitmap croppedBitmap = Bitmap.createBitmap(bitmap, x, y, width, height);
@@ -197,12 +197,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
 private void saveBitmapToFile(Bitmap bitmap) {
-    // Define the file attributes
+    // Saving in PNG
     String displayName = "ARScene_" + System.currentTimeMillis() + ".png";
     ContentValues values = new ContentValues();
     values.put(MediaStore.MediaColumns.DISPLAY_NAME, displayName);
     values.put(MediaStore.MediaColumns.MIME_TYPE, "image/png");
-    // For images saved to the Pictures directory
     values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES);
 
     // Insert the metadata to the MediaStore and get the Uri
