@@ -67,6 +67,8 @@ public class MainActivity extends AppCompatActivity {
 
     private int rotationDegrees = 0;
 
+    private Rect detectedObjectBoundingBox = null;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -143,10 +145,13 @@ public class MainActivity extends AppCompatActivity {
                                             // Show capture button if an object is detected
                                             if (detectedObjects.size() > 0) {
                                                 DetectedObject firstObject = detectedObjects.get(0);
-                                                captureAndCrop(firstObject.getBoundingBox());
-
+                                                detectedObjectBoundingBox = firstObject.getBoundingBox();
                                                 captureButton.setVisibility(View.VISIBLE);
+                                            } else {
+                                                detectedObjectBoundingBox = null;
+                                                captureButton.setVisibility(View.GONE);
                                             }
+
 
                                             graphicOverlay.postInvalidate();
                                         })
@@ -188,52 +193,18 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void capturePhoto() {
-//        hideARFeatures();
-        // Delay the capture to ensure visibility changes have time to take effect
-        new Handler(Looper.getMainLooper()).postDelayed(this::captureAndCropWithBoundsCalculation, 100);
-    }
-
-    private void captureAndCropWithBoundsCalculation() {
-        // Calculate bounds
-        int minX = Integer.MAX_VALUE;
-        int minY = Integer.MAX_VALUE;
-        int maxX = -1;
-        int maxY = -1;
-
-        for (AnchorNode anchorNode : anchorNodes) {
-            Point screenPoint = worldToScreenPoint(anchorNode.getWorldPosition());
-            if (screenPoint.x < minX) minX = screenPoint.x;
-            if (screenPoint.y < minY) minY = screenPoint.y;
-            if (screenPoint.x > maxX) maxX = screenPoint.x;
-            if (screenPoint.y > maxY) maxY = screenPoint.y;
+        // Check if a bounding box exists
+        if (detectedObjectBoundingBox != null) {
+            // Use a delay to ensure any UI changes have time to process
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                captureAndCrop(detectedObjectBoundingBox);
+            }, 100);
+        } else {
+            Toast.makeText(MainActivity.this, "No object detected to capture.", Toast.LENGTH_SHORT).show();
         }
-
-        minX = Math.max(minX, 0);
-        minY = Math.max(minY, 0);
-        maxX = Math.min(maxX, arFragment.getArSceneView().getWidth());
-        maxY = Math.min(maxY, arFragment.getArSceneView().getHeight());
-
-        // Proceed with capture and crop
-        captureAndCrop(minX, minY, maxX - minX, maxY - minY);
     }
 
-//    private void captureAndCrop(int x, int y, int width, int height) {
-//        ArSceneView view = arFragment.getArSceneView();
-//        final Bitmap bitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);
-//
-//        PixelCopy.request(view, bitmap, (copyResult) -> {
-////            restoreARFeatures();
-//            if (copyResult == PixelCopy.SUCCESS) {
-//                // Crop the bitmap
-//                Bitmap croppedBitmap = Bitmap.createBitmap(bitmap, x, y, width, height);
-//                saveBitmapToFile(croppedBitmap); // Implement this method to save the cropped bitmap
-//            } else {
-//                runOnUiThread(() -> Toast.makeText(MainActivity.this, "Failed to capture photo", Toast.LENGTH_SHORT).show());
-//            }
-//        }, new Handler(Looper.getMainLooper()));
-//    }
-
-    private void captureAndCrop(Rect boundingBox) { // Pass the bounding box as a parameter
+    private void captureAndCrop(Rect boundingBox) {
         ArSceneView view = arFragment.getArSceneView();
         final Bitmap bitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);
 
@@ -247,14 +218,18 @@ public class MainActivity extends AppCompatActivity {
 
                 // Crop the bitmap using the bounding box coordinates
                 Bitmap croppedBitmap = Bitmap.createBitmap(bitmap, x, y, width, height);
-                saveBitmapToFile(croppedBitmap);
+                saveBitmapToFile(croppedBitmap, () -> {
+                    // Reset the bounding box after saving
+                    detectedObjectBoundingBox = null;
+                    // You might want to update the UI or state accordingly
+                });
             } else {
                 runOnUiThread(() -> Toast.makeText(MainActivity.this, "Failed to capture photo", Toast.LENGTH_SHORT).show());
             }
         }, new Handler(Looper.getMainLooper()));
     }
 
-private void saveBitmapToFile(Bitmap bitmap) {
+private void saveBitmapToFile(Bitmap bitmap, Runnable onSaveComplete) {
     // Define the file attributes
     String displayName = "ARScene_" + System.currentTimeMillis() + ".png";
     ContentValues values = new ContentValues();
@@ -270,6 +245,11 @@ private void saveBitmapToFile(Bitmap bitmap) {
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
             Log.d(TAG, "Photo saved to " + uri.toString());
             runOnUiThread(() -> Toast.makeText(MainActivity.this, "Photo saved to " + uri.toString(), Toast.LENGTH_LONG).show());
+
+            if(onSaveComplete!=null){
+                onSaveComplete.run();
+            }
+
         } catch (IOException e) {
             Log.e(TAG, "Unable to save image to file.", e);
             runOnUiThread(() -> Toast.makeText(MainActivity.this, "Failed to save photo", Toast.LENGTH_SHORT).show());
@@ -278,21 +258,14 @@ private void saveBitmapToFile(Bitmap bitmap) {
 }
 
 
-
-    private void hideARFeatures() {
-        arFragment.getArSceneView().getPlaneRenderer().setVisible(false);
-        for (AnchorNode anchorNode : anchorNodes) {
-            anchorNode.setEnabled(false);
-        }
+    private int translateX(float normalizedX) {
+        // Assume normalizedX is a value between 0 and 1, where 1 is the full width of the view
+        return (int) (normalizedX * arFragment.getArSceneView().getWidth());
     }
 
-    private void restoreARFeatures() {
-        runOnUiThread(() -> {
-            arFragment.getArSceneView().getPlaneRenderer().setVisible(true);
-            for (AnchorNode anchorNode : anchorNodes) {
-                anchorNode.setEnabled(true);
-            }
-        });
+    private int translateY(float normalizedY) {
+        // Assume normalizedY is a value between 0 and 1, where 1 is the full height of the view
+        return (int) (normalizedY * arFragment.getArSceneView().getHeight());
     }
 
     private void setupOrientationListener() {
