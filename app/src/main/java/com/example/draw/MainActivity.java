@@ -145,7 +145,9 @@ public class MainActivity extends AppCompatActivity {
 
     private Point worldToScreenPoint(Vector3 worldPoint) {
         Camera camera = arFragment.getArSceneView().getScene().getCamera();
+        Log.d(TAG, "camera" + camera);
         Vector3 screenPoint = camera.worldToScreenPoint(worldPoint);
+        Log.d(TAG, "screenPoint" + screenPoint);
         return new Point((int) screenPoint.x, (int) screenPoint.y);
     }
 
@@ -164,8 +166,10 @@ public class MainActivity extends AppCompatActivity {
         int maxY = -1;
 
         for (AnchorNode anchorNode : anchorNodes) {
+            Log.d(TAG, "anchorNode.getWorldPosition(): " + anchorNode.getWorldPosition());
             Point screenPoint = worldToScreenPoint(anchorNode.getWorldPosition());
             if (screenPoint.x < minX) minX = screenPoint.x;
+            if (screenPoint.y < minY) minY = screenPoint.y;
             if (screenPoint.y < minY) minY = screenPoint.y;
             if (screenPoint.x > maxX) maxX = screenPoint.x;
             if (screenPoint.y > maxY) maxY = screenPoint.y;
