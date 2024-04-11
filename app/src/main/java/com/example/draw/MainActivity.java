@@ -15,16 +15,24 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.PixelCopy;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
 import com.google.ar.core.Anchor;
+import com.google.ar.core.HitResult;
+import com.google.ar.core.Plane;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.Camera;
+import com.google.ar.sceneform.Node;
+import com.google.ar.sceneform.math.Quaternion;
 import com.google.ar.sceneform.math.Vector3;
+import com.google.ar.sceneform.rendering.Color;
+import com.google.ar.sceneform.rendering.MaterialFactory;
 import com.google.ar.sceneform.rendering.ModelRenderable;
+import com.google.ar.sceneform.rendering.ShapeFactory;
 import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.TransformableNode;
 import java.io.IOException;
@@ -37,6 +45,8 @@ import com.google.ar.sceneform.ArSceneView;
 public class MainActivity extends AppCompatActivity {
 
     private ArFragment arFragment;
+
+    private AnchorNode lastAnchorNode;
 
     private static final String TAG = MainActivity.class.getSimpleName();
     private final List<AnchorNode> anchorNodes = new ArrayList<>();
@@ -96,14 +106,12 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
 
-            // Check after adding a new node if we've reached the limit
-            if (anchorNodes.size() == 4) {
-                Toast.makeText(this, "Maximum of 4 models placed. Ready to capture!", Toast.LENGTH_SHORT).show();
-                captureButton.setVisibility(View.VISIBLE);
+            if(anchorNodes.size() == 2){
+                addLineBetweenHits(hitResult, plane, motionEvent);
             }
 
-            if (anchorNodes.size() >= 4) {
-                Toast.makeText(this, "Only 4 nodes are allowed", Toast.LENGTH_SHORT).show();
+            if (anchorNodes.size() >= 3) {
+                Toast.makeText(this, "Only 3 nodes are allowed", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -122,8 +130,49 @@ public class MainActivity extends AppCompatActivity {
             andy.setLocalScale(new Vector3(0.05f, 0.05f, 0.05f));
             andy.select();
             andy.getScaleController().setEnabled(false);
+
         });
     }
+
+    private void addLineBetweenHits(HitResult hitResult, Plane plane, MotionEvent motionEvent) {
+        Log.d(TAG, "Inside addLineBetweenHits");
+        Anchor anchor = hitResult.createAnchor();
+        AnchorNode anchorNode = new AnchorNode(anchor);
+
+        if (lastAnchorNode != null) {
+            anchorNode.setParent(arFragment.getArSceneView().getScene());
+            Vector3 point1, point2;
+            point1 = anchorNodes.get(0).getWorldPosition();
+            point2 = anchorNodes.get(1).getWorldPosition();
+
+            final Vector3 difference = Vector3.subtract(point1, point2);
+            final Vector3 directionFromTopToBottom = difference.normalized();
+            final Quaternion rotationFromAToB =
+                    Quaternion.lookRotation(directionFromTopToBottom, Vector3.up());
+            Color color;
+            color = new Color(android.graphics.Color.RED);
+            MaterialFactory.makeOpaqueWithColor(getApplicationContext(), color)
+                    .thenAccept(
+                            material -> {
+/* Then, create a rectangular prism, using ShapeFactory.makeCube() and use the difference vector to extend to the necessary length.  */
+                                ModelRenderable model = ShapeFactory.makeCube(
+                                        new Vector3(.01f, .01f, difference.length()),
+                                        Vector3.zero(), material);
+/* Last, set the world rotation of the node to the rotation calculated earlier and set the world position to the midpoint between the given points . */
+                                Node node = new Node();
+                                node.setParent(anchorNode);
+                                node.setRenderable(model);
+                                node.setWorldPosition(Vector3.add(point1, point2).scaled(.5f));
+                                node.setWorldRotation(rotationFromAToB);
+                            }
+                    );
+            lastAnchorNode = anchorNode;
+        }
+        else{
+            Log.d(TAG, "addLineBetweenHits: ", null);
+        }
+    }
+
 
 
     private boolean checkIsSupportedDeviceOrFinish(final Activity activity) {
