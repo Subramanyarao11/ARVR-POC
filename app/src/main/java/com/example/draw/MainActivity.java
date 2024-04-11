@@ -46,7 +46,6 @@ public class MainActivity extends AppCompatActivity {
 
     private ArFragment arFragment;
 
-    private AnchorNode lastAnchorNode;
 
     private static final String TAG = MainActivity.class.getSimpleName();
     private final List<AnchorNode> anchorNodes = new ArrayList<>();
@@ -106,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
 
-            if(anchorNodes.size() == 2){
+            if(anchorNodes.size() == 1){
                 addLineBetweenHits(hitResult, plane, motionEvent);
             }
 
@@ -135,44 +134,32 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void addLineBetweenHits(HitResult hitResult, Plane plane, MotionEvent motionEvent) {
-        Log.d(TAG, "Inside addLineBetweenHits");
         Anchor anchor = hitResult.createAnchor();
         AnchorNode anchorNode = new AnchorNode(anchor);
+        anchorNode.setParent(arFragment.getArSceneView().getScene());
 
-        if (lastAnchorNode != null) {
-            anchorNode.setParent(arFragment.getArSceneView().getScene());
-            Vector3 point1, point2;
-            point1 = anchorNodes.get(0).getWorldPosition();
-            point2 = anchorNodes.get(1).getWorldPosition();
+        Vector3 point1, point2;
+        point1 = anchorNodes.get(0).getWorldPosition();
+        point2 = anchorNode.getWorldPosition();
 
-            final Vector3 difference = Vector3.subtract(point1, point2);
-            final Vector3 directionFromTopToBottom = difference.normalized();
-            final Quaternion rotationFromAToB =
-                    Quaternion.lookRotation(directionFromTopToBottom, Vector3.up());
-            Color color;
-            color = new Color(android.graphics.Color.RED);
-            MaterialFactory.makeOpaqueWithColor(getApplicationContext(), color)
-                    .thenAccept(
-                            material -> {
-/* Then, create a rectangular prism, using ShapeFactory.makeCube() and use the difference vector to extend to the necessary length.  */
-                                ModelRenderable model = ShapeFactory.makeCube(
-                                        new Vector3(.01f, .01f, difference.length()),
-                                        Vector3.zero(), material);
-/* Last, set the world rotation of the node to the rotation calculated earlier and set the world position to the midpoint between the given points . */
-                                Node node = new Node();
-                                node.setParent(anchorNode);
-                                node.setRenderable(model);
-                                node.setWorldPosition(Vector3.add(point1, point2).scaled(.5f));
-                                node.setWorldRotation(rotationFromAToB);
-                            }
-                    );
-            lastAnchorNode = anchorNode;
-        }
-        else{
-            Log.d(TAG, "addLineBetweenHits: ", null);
-        }
+        final Vector3 difference = Vector3.subtract(point1, point2);
+        final Vector3 directionFromTopToBottom = difference.normalized();
+        final Quaternion rotationFromAToB = Quaternion.lookRotation(directionFromTopToBottom, Vector3.up());
+        Color color = new Color(android.graphics.Color.RED);
+
+        MaterialFactory.makeOpaqueWithColor(getApplicationContext(), color)
+                .thenAccept(material -> {
+                    ModelRenderable model = ShapeFactory.makeCube(
+                            new Vector3(.01f, .01f, difference.length()),
+                            Vector3.zero(), material);
+
+                    Node node = new Node();
+                    node.setParent(arFragment.getArSceneView().getScene());
+                    node.setRenderable(model);
+                    node.setWorldPosition(Vector3.add(point1, point2).scaled(.5f));
+                    node.setWorldRotation(rotationFromAToB);
+                });
     }
-
 
 
     private boolean checkIsSupportedDeviceOrFinish(final Activity activity) {
