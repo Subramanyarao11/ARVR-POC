@@ -30,6 +30,7 @@ import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.math.Quaternion;
 import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.Color;
+import com.google.ar.sceneform.rendering.Material;
 import com.google.ar.sceneform.rendering.MaterialFactory;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.rendering.ShapeFactory;
@@ -41,10 +42,55 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.ar.sceneform.ArSceneView;
-
 public class MainActivity extends AppCompatActivity {
 
+    static class ConnectingLine {
+        private final Node lineNode;
+        private final AnchorNode node1, node2;
+
+        private Material lineMaterial;
+
+        ConnectingLine(AnchorNode node1, AnchorNode node2, Context context) {
+            this.node1 = node1;
+            this.node2 = node2;
+
+            lineNode = new Node();
+
+            // Create the material asynchronously
+            MaterialFactory.makeOpaqueWithColor(context, new Color(android.graphics.Color.RED))
+                    .thenAccept(material -> {
+                        lineMaterial = material;
+                        updateLine();
+                    });
+
+            assert node1.getScene() != null;
+            node1.getScene().addChild(lineNode);
+        }
+
+        private void updateLine() {
+            Vector3 point1 = node1.getWorldPosition();
+            Vector3 point2 = node2.getWorldPosition();
+            final Vector3 difference = Vector3.subtract(point1, point2);
+            final Vector3 direction = difference.normalized();
+            final Quaternion rotation = Quaternion.lookRotation(direction, Vector3.up());
+
+            lineNode.setWorldPosition(Vector3.add(point1, point2).scaled(0.5f));
+            lineNode.setWorldRotation(rotation);
+            lineNode.setRenderable(ShapeFactory.makeCube(
+                    new Vector3(.01f, .01f, difference.length()),
+                    Vector3.zero(),
+                    lineMaterial));
+        }
+
+        public void update(Context context) {
+            updateLine();
+        }
+    }
+
     private ArFragment arFragment;
+
+
+    private ConnectingLine connectingLine;
 
 
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -56,6 +102,16 @@ public class MainActivity extends AppCompatActivity {
     private static final double MIN_OPENGL_VERSION = 3.0;
 
     private Button captureButton;
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        arFragment.getArSceneView().getScene().addOnUpdateListener(frameTime -> {
+            if (connectingLine != null) {
+                connectingLine.update(this);
+            }
+        });
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,7 +165,7 @@ public class MainActivity extends AppCompatActivity {
                 addLineBetweenHits(hitResult, plane, motionEvent);
             }
 
-            if (anchorNodes.size() >= 3) {
+            if (anchorNodes.size() >= 4) {
                 Toast.makeText(this, "Only 3 nodes are allowed", Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -137,28 +193,11 @@ public class MainActivity extends AppCompatActivity {
         Anchor anchor = hitResult.createAnchor();
         AnchorNode anchorNode = new AnchorNode(anchor);
         anchorNode.setParent(arFragment.getArSceneView().getScene());
+        anchorNodes.add(anchorNode);
 
-        Vector3 point1, point2;
-        point1 = anchorNodes.get(0).getWorldPosition();
-        point2 = anchorNode.getWorldPosition();
-
-        final Vector3 difference = Vector3.subtract(point1, point2);
-        final Vector3 directionFromTopToBottom = difference.normalized();
-        final Quaternion rotationFromAToB = Quaternion.lookRotation(directionFromTopToBottom, Vector3.up());
-        Color color = new Color(android.graphics.Color.RED);
-
-        MaterialFactory.makeOpaqueWithColor(getApplicationContext(), color)
-                .thenAccept(material -> {
-                    ModelRenderable model = ShapeFactory.makeCube(
-                            new Vector3(.01f, .01f, difference.length()),
-                            Vector3.zero(), material);
-
-                    Node node = new Node();
-                    node.setParent(arFragment.getArSceneView().getScene());
-                    node.setRenderable(model);
-                    node.setWorldPosition(Vector3.add(point1, point2).scaled(.5f));
-                    node.setWorldRotation(rotationFromAToB);
-                });
+        if (anchorNodes.size() == 2) {
+            connectingLine = new ConnectingLine(anchorNodes.get(0), anchorNodes.get(1), this);
+        }
     }
 
 
