@@ -44,13 +44,62 @@ import java.util.List;
 import com.google.ar.sceneform.ArSceneView;
 public class MainActivity extends AppCompatActivity {
 
+//    static class ConnectingLine {
+//        private final Node lineNode;
+//        private final AnchorNode node1, node2;
+//
+//        private Material lineMaterial;
+//
+//        ConnectingLine(AnchorNode node1, AnchorNode node2, Context context) {
+//            this.node1 = node1;
+//            this.node2 = node2;
+//
+//            lineNode = new Node();
+//
+//            // Create the material asynchronously
+//            MaterialFactory.makeOpaqueWithColor(context, new Color(android.graphics.Color.RED))
+//                    .thenAccept(material -> {
+//                        lineMaterial = material;
+//                        updateLine();
+//                    });
+//
+//            assert node1.getScene() != null;
+//            node1.getScene().addChild(lineNode);
+//        }
+//
+//        private void updateLine() {
+//            Vector3 point1 = node1.getWorldPosition();
+//            Vector3 point2 = node2.getWorldPosition();
+//            final Vector3 difference = Vector3.subtract(point1, point2);
+//            final Vector3 direction = difference.normalized();
+//            final Quaternion rotation = Quaternion.lookRotation(direction, Vector3.up());
+//
+//            lineNode.setWorldPosition(Vector3.add(point1, point2).scaled(0.5f));
+//            lineNode.setWorldRotation(rotation);
+//            lineNode.setRenderable(ShapeFactory.makeCube(
+//                    new Vector3(.01f, .01f, difference.length()),
+//                    Vector3.zero(),
+//                    lineMaterial));
+//        }
+//
+//        public void update(Context context) {
+//            updateLine();
+//        }
+//    }
+
     static class ConnectingLine {
         private final Node lineNode;
-        private final AnchorNode node1, node2;
+        private final TransformableNode node1, node2;
 
         private Material lineMaterial;
 
-        ConnectingLine(AnchorNode node1, AnchorNode node2, Context context) {
+        public void update(Context context) {
+            updateLine();
+        }
+
+
+
+        ConnectingLine(TransformableNode node1, TransformableNode node2, Context context) {
             this.node1 = node1;
             this.node2 = node2;
 
@@ -65,6 +114,14 @@ public class MainActivity extends AppCompatActivity {
 
             assert node1.getScene() != null;
             node1.getScene().addChild(lineNode);
+
+            // Add update listeners to the TransformableNodes
+           node1.addTransformChangedListener(this::onTransformChanged);
+           node2.addTransformChangedListener(this::onTransformChanged);
+        }
+
+        private void onTransformChanged(Node node, Node node1) {
+            updateLine();
         }
 
         private void updateLine() {
@@ -81,11 +138,9 @@ public class MainActivity extends AppCompatActivity {
                     Vector3.zero(),
                     lineMaterial));
         }
-
-        public void update(Context context) {
-            updateLine();
-        }
     }
+
+
 
     private ArFragment arFragment;
 
@@ -161,13 +216,29 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
 
-            if(anchorNodes.size() == 1){
-                addLineBetweenHits(hitResult, plane, motionEvent);
-            }
 
-            if (anchorNodes.size() >= 4) {
+//            if (anchorNodes.size() == 2) {
+//                connectingLine = new ConnectingLine(
+//                        (TransformableNode) anchorNodes.get(0).getChildren().get(0),
+//                        (TransformableNode) anchorNodes.get(1).getChildren().get(0),
+//                        this
+//                );
+//            }
+//
+//
+//            if (anchorNodes.size() >= 3) {
+//                Toast.makeText(this, "Only 3 nodes are allowed", Toast.LENGTH_SHORT).show();
+//                return;
+//            }
+
+            if (anchorNodes.size() == 2 && connectingLine == null) {
+                connectingLine = new ConnectingLine(
+                        (TransformableNode) anchorNodes.get(0).getChildren().get(0),
+                        (TransformableNode) anchorNodes.get(1).getChildren().get(0),
+                        this
+                );
+            } else if (anchorNodes.size() >= 3) {
                 Toast.makeText(this, "Only 3 nodes are allowed", Toast.LENGTH_SHORT).show();
-                return;
             }
 
             Anchor anchor = hitResult.createAnchor();
@@ -189,16 +260,16 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void addLineBetweenHits(HitResult hitResult, Plane plane, MotionEvent motionEvent) {
-        Anchor anchor = hitResult.createAnchor();
-        AnchorNode anchorNode = new AnchorNode(anchor);
-        anchorNode.setParent(arFragment.getArSceneView().getScene());
-        anchorNodes.add(anchorNode);
-
-        if (anchorNodes.size() == 2) {
-            connectingLine = new ConnectingLine(anchorNodes.get(0), anchorNodes.get(1), this);
-        }
-    }
+//    private void addLineBetweenHits(HitResult hitResult, Plane plane, MotionEvent motionEvent) {
+//        Anchor anchor = hitResult.createAnchor();
+//        AnchorNode anchorNode = new AnchorNode(anchor);
+//        anchorNode.setParent(arFragment.getArSceneView().getScene());
+//        anchorNodes.add(anchorNode);
+//
+//        if (anchorNodes.size() == 2) {
+//            connectingLine = new ConnectingLine(anchorNodes.get(0), anchorNodes.get(1), this);
+//        }
+//    }
 
 
     private boolean checkIsSupportedDeviceOrFinish(final Activity activity) {
