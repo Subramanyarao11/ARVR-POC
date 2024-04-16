@@ -15,15 +15,11 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.PixelCopy;
-import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
 import com.google.ar.core.Anchor;
-import com.google.ar.core.HitResult;
-import com.google.ar.core.Plane;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.Camera;
 import com.google.ar.sceneform.Node;
@@ -40,53 +36,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import com.example.draw.LineRenderer;
 
 import com.google.ar.sceneform.ArSceneView;
 public class MainActivity extends AppCompatActivity {
-
-//    static class ConnectingLine {
-//        private final Node lineNode;
-//        private final AnchorNode node1, node2;
-//
-//        private Material lineMaterial;
-//
-//        ConnectingLine(AnchorNode node1, AnchorNode node2, Context context) {
-//            this.node1 = node1;
-//            this.node2 = node2;
-//
-//            lineNode = new Node();
-//
-//            // Create the material asynchronously
-//            MaterialFactory.makeOpaqueWithColor(context, new Color(android.graphics.Color.RED))
-//                    .thenAccept(material -> {
-//                        lineMaterial = material;
-//                        updateLine();
-//                    });
-//
-//            assert node1.getScene() != null;
-//            node1.getScene().addChild(lineNode);
-//        }
-//
-//        private void updateLine() {
-//            Vector3 point1 = node1.getWorldPosition();
-//            Vector3 point2 = node2.getWorldPosition();
-//            final Vector3 difference = Vector3.subtract(point1, point2);
-//            final Vector3 direction = difference.normalized();
-//            final Quaternion rotation = Quaternion.lookRotation(direction, Vector3.up());
-//
-//            lineNode.setWorldPosition(Vector3.add(point1, point2).scaled(0.5f));
-//            lineNode.setWorldRotation(rotation);
-//            lineNode.setRenderable(ShapeFactory.makeCube(
-//                    new Vector3(.01f, .01f, difference.length()),
-//                    Vector3.zero(),
-//                    lineMaterial));
-//        }
-//
-//        public void update(Context context) {
-//            updateLine();
-//        }
-//    }
-
     static class ConnectingLine {
         private final Node lineNode;
         private final TransformableNode node1, node2;
@@ -99,25 +52,22 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-        ConnectingLine(TransformableNode node1, TransformableNode node2, Context context) {
+        public ConnectingLine(TransformableNode node1, TransformableNode node2, Context context) {
             this.node1 = node1;
             this.node2 = node2;
-
             lineNode = new Node();
+            lineNode.setParent(node1.getScene());
 
-            // Create the material asynchronously
+            // Asynchronously create the material
             MaterialFactory.makeOpaqueWithColor(context, new Color(android.graphics.Color.RED))
                     .thenAccept(material -> {
                         lineMaterial = material;
                         updateLine();
                     });
 
-            assert node1.getScene() != null;
-            node1.getScene().addChild(lineNode);
-
             // Add update listeners to the TransformableNodes
-           node1.addTransformChangedListener(this::onTransformChanged);
-           node2.addTransformChangedListener(this::onTransformChanged);
+            node1.addTransformChangedListener(this::onTransformChanged);
+            node2.addTransformChangedListener(this::onTransformChanged);
         }
 
         private void onTransformChanged(Node node, Node node1) {
@@ -125,11 +75,17 @@ public class MainActivity extends AppCompatActivity {
         }
 
         private void updateLine() {
+            if (lineMaterial == null) {
+                Log.d(TAG, "Material not ready, skipping line update.");
+
+                return; // Return if the material is not ready
+            }
+
             Vector3 point1 = node1.getWorldPosition();
             Vector3 point2 = node2.getWorldPosition();
-            final Vector3 difference = Vector3.subtract(point1, point2);
-            final Vector3 direction = difference.normalized();
-            final Quaternion rotation = Quaternion.lookRotation(direction, Vector3.up());
+            Vector3 difference = Vector3.subtract(point1, point2);
+            Vector3 direction = difference.normalized();
+            Quaternion rotation = Quaternion.lookRotation(direction, Vector3.up());
 
             lineNode.setWorldPosition(Vector3.add(point1, point2).scaled(0.5f));
             lineNode.setWorldRotation(rotation);
@@ -150,6 +106,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
     private final List<AnchorNode> anchorNodes = new ArrayList<>();
+    private List<LineRenderer> lines = new ArrayList<>();
 
 
     private ModelRenderable andyRenderable;
@@ -216,29 +173,19 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
 
-
-//            if (anchorNodes.size() == 2) {
-//                connectingLine = new ConnectingLine(
-//                        (TransformableNode) anchorNodes.get(0).getChildren().get(0),
-//                        (TransformableNode) anchorNodes.get(1).getChildren().get(0),
-//                        this
-//                );
-//            }
-//
-//
-//            if (anchorNodes.size() >= 3) {
-//                Toast.makeText(this, "Only 3 nodes are allowed", Toast.LENGTH_SHORT).show();
-//                return;
-//            }
-
             if (anchorNodes.size() == 2 && connectingLine == null) {
                 connectingLine = new ConnectingLine(
                         (TransformableNode) anchorNodes.get(0).getChildren().get(0),
                         (TransformableNode) anchorNodes.get(1).getChildren().get(0),
                         this
                 );
-            } else if (anchorNodes.size() >= 3) {
+            } else if (anchorNodes.size() == 3) {
+                calculateRectangle();
+            }
+
+            if (anchorNodes.size() >= 3) {
                 Toast.makeText(this, "Only 3 nodes are allowed", Toast.LENGTH_SHORT).show();
+                return;
             }
 
             Anchor anchor = hitResult.createAnchor();
@@ -260,16 +207,71 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-//    private void addLineBetweenHits(HitResult hitResult, Plane plane, MotionEvent motionEvent) {
-//        Anchor anchor = hitResult.createAnchor();
-//        AnchorNode anchorNode = new AnchorNode(anchor);
-//        anchorNode.setParent(arFragment.getArSceneView().getScene());
-//        anchorNodes.add(anchorNode);
-//
-//        if (anchorNodes.size() == 2) {
-//            connectingLine = new ConnectingLine(anchorNodes.get(0), anchorNodes.get(1), this);
-//        }
-//    }
+
+    private void calculateRectangle() {
+        if (anchorNodes.size() < 3) {
+            Log.d(TAG, "Not enough anchor nodes to calculate rectangle");
+            return;
+        }
+
+        Vector3 pt1 = anchorNodes.get(0).getWorldPosition();
+        Vector3 pt2 = anchorNodes.get(1).getWorldPosition();
+        Vector3 pt3 = anchorNodes.get(2).getWorldPosition();
+
+        // Vector from pt1 to pt2 (width vector)
+        Vector3 edgeVector = Vector3.subtract(pt2, pt1);
+        float width = edgeVector.length();
+        Vector3 edgeDirection = edgeVector.normalized();
+
+        // Vector from pt1 to pt3
+        Vector3 heightVector = Vector3.subtract(pt3, pt1);
+
+        // Perpendicular vector from the edge to pt3 (depth vector)
+        // Project heightVector onto the normal of the edgeDirection
+        Vector3 edgeNormal = Vector3.cross(edgeDirection, Vector3.up()).normalized();
+        float depth = Vector3.dot(heightVector, edgeNormal);
+
+        // Midpoint of pt1 and pt2
+        Vector3 baseCenter = Vector3.add(pt1, pt2).scaled(0.5f);
+
+        // Rectangle's depth should extend in the direction of the cross product of edge direction and global up vector
+        Vector3 rectCenter = Vector3.add(baseCenter, edgeNormal.scaled(depth * 0.5f));
+        Quaternion rotation = Quaternion.lookRotation(edgeDirection, Vector3.up());
+
+        createRectangle(rectCenter, new Vector3(width, 0.01f, Math.abs(depth)), rotation);
+    }
+
+    private void createRectangle(Vector3 center, Vector3 dimensions, Quaternion rotation) {
+        MaterialFactory.makeOpaqueWithColor(this, new Color(android.graphics.Color.BLUE))
+                .thenAccept(material -> {
+                    ModelRenderable rectangle = ShapeFactory.makeCube(dimensions, Vector3.zero(), material);
+                    Node rectangleNode = new Node();
+                    rectangleNode.setRenderable(rectangle);
+                    rectangleNode.setWorldPosition(center);
+                    rectangleNode.setWorldRotation(rotation);
+
+                    arFragment.getArSceneView().getScene().addChild(rectangleNode);
+                });
+    }
+
+
+
+    private void addLineBetweenPoints(Vector3 start, Vector3 end) {
+        Log.d(TAG, "Adding line between " + start + " and " + end);
+        LineRenderer line = new LineRenderer(getApplicationContext(), start, end);
+        arFragment.getArSceneView().getScene().addChild(line);
+        lines.add(line);
+    }
+
+    private void clearLines() {
+        Log.d(TAG, "Clearing all lines");
+        for (LineRenderer line : lines) {
+            line.setParent(null); // Remove line from the scene
+        }
+        lines.clear();
+    }
+
+
 
 
     private boolean checkIsSupportedDeviceOrFinish(final Activity activity) {
