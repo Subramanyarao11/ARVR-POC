@@ -46,6 +46,9 @@ public class MainActivity extends AppCompatActivity {
 
         private Material lineMaterial;
 
+
+
+
         public void update(Context context) {
             updateLine();
         }
@@ -114,6 +117,8 @@ public class MainActivity extends AppCompatActivity {
     private static final double MIN_OPENGL_VERSION = 3.0;
 
     private Button captureButton;
+
+    private Node currentRectangleNode = null;
 
     @Override
     protected void onResume() {
@@ -204,6 +209,12 @@ public class MainActivity extends AppCompatActivity {
             andy.select();
             andy.getScaleController().setEnabled(false);
 
+            andy.addTransformChangedListener((node, node1) -> {
+                if (anchorNodes.size() == 3) {
+                    calculateRectangle();
+                }
+            });
+
         });
     }
 
@@ -245,34 +256,22 @@ public class MainActivity extends AppCompatActivity {
         MaterialFactory.makeOpaqueWithColor(this, new Color(android.graphics.Color.BLUE))
                 .thenAccept(material -> {
                     ModelRenderable rectangle = ShapeFactory.makeCube(dimensions, Vector3.zero(), material);
-                    Node rectangleNode = new Node();
-                    rectangleNode.setRenderable(rectangle);
-                    rectangleNode.setWorldPosition(center);
-                    rectangleNode.setWorldRotation(rotation);
 
-                    arFragment.getArSceneView().getScene().addChild(rectangleNode);
+                    // Remove the old rectangle from the scene if it exists
+                    if (currentRectangleNode != null) {
+                        currentRectangleNode.setParent(null); // Detach from the scene
+                    }
+
+                    // Create a new node for the rectangle
+                    currentRectangleNode = new Node();
+                    currentRectangleNode.setRenderable(rectangle);
+                    currentRectangleNode.setWorldPosition(center);
+                    currentRectangleNode.setWorldRotation(rotation);
+
+                    // Add the new node to the scene
+                    arFragment.getArSceneView().getScene().addChild(currentRectangleNode);
                 });
     }
-
-
-
-    private void addLineBetweenPoints(Vector3 start, Vector3 end) {
-        Log.d(TAG, "Adding line between " + start + " and " + end);
-        LineRenderer line = new LineRenderer(getApplicationContext(), start, end);
-        arFragment.getArSceneView().getScene().addChild(line);
-        lines.add(line);
-    }
-
-    private void clearLines() {
-        Log.d(TAG, "Clearing all lines");
-        for (LineRenderer line : lines) {
-            line.setParent(null); // Remove line from the scene
-        }
-        lines.clear();
-    }
-
-
-
 
     private boolean checkIsSupportedDeviceOrFinish(final Activity activity) {
         Log.d(TAG, "Inside checkIsSupportedDeviceOrFinish()");
