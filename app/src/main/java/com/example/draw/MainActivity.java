@@ -218,8 +218,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-
-
     private void calculateRectangle() {
         if (anchorNodes.size() < 3) {
             Log.d(TAG, "Not enough anchor nodes to calculate rectangle");
@@ -259,23 +257,32 @@ public class MainActivity extends AppCompatActivity {
         Vector3 rectangleCenter = Vector3.add(baseCenter, depthOffset);
 
         Quaternion rotation = Quaternion.lookRotation(edgeDirection, Vector3.up());
-        updateRectangle(rectangleCenter, new Vector3(width, 0.01f, Math.abs(depth)), rotation);
+        float height = 0.1f;
+        updateRectangle(rectangleCenter, width, height, Math.abs(depth), rotation);
+
     }
 
-    private void updateRectangle(Vector3 center, Vector3 dimensions, Quaternion rotation) {
+    private void updateRectangle(Vector3 center, float width, float height, float depth, Quaternion rotation) {
+        Vector3 dimensions = new Vector3(width, height, depth);  // Create a new Vector3 for dimensions
+
         MaterialFactory.makeOpaqueWithColor(this, new Color(android.graphics.Color.BLUE))
                 .thenAccept(material -> {
                     ModelRenderable rectangle = ShapeFactory.makeCube(dimensions, Vector3.zero(), material);
+
                     if (currentRectangleNode != null) {
                         currentRectangleNode.setParent(null);  // Remove the old rectangle from the scene
                     }
+
                     currentRectangleNode = new Node();
                     currentRectangleNode.setRenderable(rectangle);
                     currentRectangleNode.setWorldPosition(center);
                     currentRectangleNode.setWorldRotation(rotation);
+
                     arFragment.getArSceneView().getScene().addChild(currentRectangleNode);
                 });
     }
+
+
 
 
 
