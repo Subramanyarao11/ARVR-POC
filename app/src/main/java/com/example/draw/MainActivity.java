@@ -219,6 +219,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+
     private void calculateRectangle() {
         if (anchorNodes.size() < 3) {
             Log.d(TAG, "Not enough anchor nodes to calculate rectangle");
@@ -229,49 +230,56 @@ public class MainActivity extends AppCompatActivity {
         Vector3 pt2 = anchorNodes.get(1).getWorldPosition();
         Vector3 pt3 = anchorNodes.get(2).getWorldPosition();
 
-        // Vector from pt1 to pt2 (width vector)
+        // Calculate the edge vector from pt1 to pt2
         Vector3 edgeVector = Vector3.subtract(pt2, pt1);
         float width = edgeVector.length();
         Vector3 edgeDirection = edgeVector.normalized();
 
         // Vector from pt1 to pt3
-        Vector3 heightVector = Vector3.subtract(pt3, pt1);
+        Vector3 fromPt1ToPt3 = Vector3.subtract(pt3, pt1);
 
-        // Perpendicular vector from the edge to pt3 (depth vector)
-        // Project heightVector onto the normal of the edgeDirection
-        Vector3 edgeNormal = Vector3.cross(edgeDirection, Vector3.up()).normalized();
-        float depth = Vector3.dot(heightVector, edgeNormal);
+        // Calculate the projection of fromPt1ToPt3 onto edgeVector
+        float projectionLength = Vector3.dot(fromPt1ToPt3, edgeDirection);
+        Vector3 projection = edgeDirection.scaled(projectionLength);
 
-        // Midpoint of pt1 and pt2
+        // Calculate the perpendicular vector from the projection point on the edge to pt3
+        Vector3 projectionPoint = Vector3.add(pt1, projection);
+        Vector3 perpendicularVector = Vector3.subtract(pt3, projectionPoint);
+        float depth = perpendicularVector.length();  // This is the depth
+
+        // Determine the direction of the depth to ensure it extends perpendicular to the edge
+        Vector3 crossProduct = Vector3.cross(edgeDirection, Vector3.up());
+        if (Vector3.dot(perpendicularVector, crossProduct) < 0) {
+            depth = -depth;
+        }
+
+        // Calculate the center of the rectangle
         Vector3 baseCenter = Vector3.add(pt1, pt2).scaled(0.5f);
+        Vector3 depthOffset = crossProduct.normalized().scaled(depth / 2.0f);
+        Vector3 rectangleCenter = Vector3.add(baseCenter, depthOffset);
 
-        // Rectangle's depth should extend in the direction of the cross product of edge direction and global up vector
-        Vector3 rectCenter = Vector3.add(baseCenter, edgeNormal.scaled(depth * 0.5f));
         Quaternion rotation = Quaternion.lookRotation(edgeDirection, Vector3.up());
-
-        createRectangle(rectCenter, new Vector3(width, 0.01f, Math.abs(depth)), rotation);
+        updateRectangle(rectangleCenter, new Vector3(width, 0.01f, Math.abs(depth)), rotation);
     }
 
-    private void createRectangle(Vector3 center, Vector3 dimensions, Quaternion rotation) {
+    private void updateRectangle(Vector3 center, Vector3 dimensions, Quaternion rotation) {
         MaterialFactory.makeOpaqueWithColor(this, new Color(android.graphics.Color.BLUE))
                 .thenAccept(material -> {
                     ModelRenderable rectangle = ShapeFactory.makeCube(dimensions, Vector3.zero(), material);
-
-                    // Remove the old rectangle from the scene if it exists
                     if (currentRectangleNode != null) {
-                        currentRectangleNode.setParent(null); // Detach from the scene
+                        currentRectangleNode.setParent(null);  // Remove the old rectangle from the scene
                     }
-
-                    // Create a new node for the rectangle
                     currentRectangleNode = new Node();
                     currentRectangleNode.setRenderable(rectangle);
                     currentRectangleNode.setWorldPosition(center);
                     currentRectangleNode.setWorldRotation(rotation);
-
-                    // Add the new node to the scene
                     arFragment.getArSceneView().getScene().addChild(currentRectangleNode);
                 });
     }
+
+
+
+
 
     private boolean checkIsSupportedDeviceOrFinish(final Activity activity) {
         Log.d(TAG, "Inside checkIsSupportedDeviceOrFinish()");
