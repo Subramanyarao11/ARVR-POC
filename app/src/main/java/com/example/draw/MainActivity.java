@@ -265,12 +265,28 @@ public class MainActivity extends AppCompatActivity {
     private void updateRectangle(Vector3 center, float width, float height, float depth, Quaternion rotation) {
         Vector3 dimensions = new Vector3(width, height, depth);  // Create a new Vector3 for dimensions
 
-        MaterialFactory.makeOpaqueWithColor(this, new Color(android.graphics.Color.BLUE))
+//        MaterialFactory.makeOpaqueWithColor(this, new Color(android.graphics.Color.BLUE))
+//                .thenAccept(material -> {
+//                    ModelRenderable rectangle = ShapeFactory.makeCube(dimensions, Vector3.zero(), material);
+//
+//                    if (currentRectangleNode != null) {
+//                        currentRectangleNode.setParent(null);  // Remove the old rectangle from the scene
+//                    }
+//
+//                    currentRectangleNode = new Node();
+//                    currentRectangleNode.setRenderable(rectangle);
+//                    currentRectangleNode.setWorldPosition(center);
+//                    currentRectangleNode.setWorldRotation(rotation);
+//
+//                    arFragment.getArSceneView().getScene().addChild(currentRectangleNode);
+//                });
+
+        MaterialFactory.makeTransparentWithColor(this, new Color(android.graphics.Color.argb(128, 0, 0, 255)))
                 .thenAccept(material -> {
                     ModelRenderable rectangle = ShapeFactory.makeCube(dimensions, Vector3.zero(), material);
 
                     if (currentRectangleNode != null) {
-                        currentRectangleNode.setParent(null);  // Remove the old rectangle from the scene
+                        currentRectangleNode.setParent(null);
                     }
 
                     currentRectangleNode = new Node();

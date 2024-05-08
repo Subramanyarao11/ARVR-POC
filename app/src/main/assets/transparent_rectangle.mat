@@ -1,0 +1,22 @@
+material {
+    name : "TransparentWithEdges",
+    parameters : [
+        {
+            type : float4,
+            name : color
+        }
+    ],
+    requires : [
+        "position",
+        "uv0"
+    ],
+    shadingModel : "unlit"
+}
+
+fragment {
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+        material.baseColor = materialParams.color;
+        // Use 'materialParams.color' to set the transparency and edge color
+    }
+}
