@@ -17,6 +17,7 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.view.PixelCopy;
 import android.widget.Button;
+import android.widget.SeekBar;
 import android.widget.Toast;
 
 import com.google.ar.core.Anchor;
@@ -120,6 +121,10 @@ public class MainActivity extends AppCompatActivity {
 
     private Node currentRectangleNode = null;
 
+    private SeekBar seekBarHeight;
+    private Button btnDecreaseHeight, btnIncreaseHeight;
+    private float height = 0.1f; // Initial height value
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -150,6 +155,48 @@ public class MainActivity extends AppCompatActivity {
         }
 
         setContentView(R.layout.activity_main);
+
+        seekBarHeight = findViewById(R.id.seekBarHeight);
+        btnDecreaseHeight = findViewById(R.id.btnDecreaseHeight);
+        btnIncreaseHeight = findViewById(R.id.btnIncreaseHeight);
+
+        // Set the initial height value to the SeekBar
+        seekBarHeight.setProgress((int) (height * 10));
+
+        seekBarHeight.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                height = progress / 10f;
+                if (anchorNodes.size() == 3) {
+                    calculateRectangle();
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        btnDecreaseHeight.setOnClickListener(v -> {
+            height = Math.max(0.1f, height - 0.1f);
+            seekBarHeight.setProgress((int) (height * 10));
+            if (anchorNodes.size() == 3) {
+                calculateRectangle();
+            }
+        });
+
+        btnIncreaseHeight.setOnClickListener(v -> {
+            height = Math.min(1f, height + 0.1f);
+            seekBarHeight.setProgress((int) (height * 10));
+            if (anchorNodes.size() == 3) {
+                calculateRectangle();
+            }
+        });
+
+
+
 
         captureButton = findViewById(R.id.captureButton);
         captureButton.setOnClickListener(v -> {
@@ -257,7 +304,7 @@ public class MainActivity extends AppCompatActivity {
         Vector3 rectangleCenter = Vector3.add(baseCenter, depthOffset);
 
         Quaternion rotation = Quaternion.lookRotation(edgeDirection, Vector3.up());
-        float height = 0.1f;
+//        float height = 0.1f;
         updateRectangle(rectangleCenter, width, height, Math.abs(depth), rotation);
 
     }
