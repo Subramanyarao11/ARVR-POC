@@ -48,10 +48,6 @@ dependencies {
 }
 apply plugin: 'com.google.ar.sceneform.plugin'
 
-sceneform.asset('sampledata/pole.FBX',
-        'default',
-        'sampledata/pole.sfa',
-        'src/main/assets/pole')
 
 
 sceneform.asset('sampledata/clinder.FBX',

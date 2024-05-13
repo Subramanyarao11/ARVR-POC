@@ -16,7 +16,9 @@ import android.os.Looper;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.PixelCopy;
+import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
@@ -125,6 +127,8 @@ public class MainActivity extends AppCompatActivity {
     private Button btnDecreaseHeight, btnIncreaseHeight;
     private float height = 0.1f; // Initial height value
 
+    private LinearLayout heightControls;
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -159,14 +163,16 @@ public class MainActivity extends AppCompatActivity {
         seekBarHeight = findViewById(R.id.seekBarHeight);
         btnDecreaseHeight = findViewById(R.id.btnDecreaseHeight);
         btnIncreaseHeight = findViewById(R.id.btnIncreaseHeight);
+        heightControls = findViewById(R.id.heightControls);
 
         // Set the initial height value to the SeekBar
         seekBarHeight.setProgress((int) (height * 10));
 
+        seekBarHeight.setMax(100);
         seekBarHeight.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                height = progress / 10f;
+                height = progress / 100f;  // Smaller increment
                 if (anchorNodes.size() == 3) {
                     calculateRectangle();
                 }
@@ -181,7 +187,7 @@ public class MainActivity extends AppCompatActivity {
 
         btnDecreaseHeight.setOnClickListener(v -> {
             height = Math.max(0.1f, height - 0.1f);
-            seekBarHeight.setProgress((int) (height * 10));
+            seekBarHeight.setProgress((int) (height * 100));
             if (anchorNodes.size() == 3) {
                 calculateRectangle();
             }
@@ -189,7 +195,7 @@ public class MainActivity extends AppCompatActivity {
 
         btnIncreaseHeight.setOnClickListener(v -> {
             height = Math.min(1f, height + 0.1f);
-            seekBarHeight.setProgress((int) (height * 10));
+            seekBarHeight.setProgress((int) (height * 100));
             if (anchorNodes.size() == 3) {
                 calculateRectangle();
             }
@@ -306,46 +312,34 @@ public class MainActivity extends AppCompatActivity {
         Quaternion rotation = Quaternion.lookRotation(edgeDirection, Vector3.up());
 //        float height = 0.1f;
         updateRectangle(rectangleCenter, width, height, Math.abs(depth), rotation);
+        showControls();
 
     }
 
     private void updateRectangle(Vector3 center, float width, float height, float depth, Quaternion rotation) {
         Vector3 dimensions = new Vector3(width, height, depth);  // Create a new Vector3 for dimensions
 
-//        MaterialFactory.makeOpaqueWithColor(this, new Color(android.graphics.Color.BLUE))
-//                .thenAccept(material -> {
-//                    ModelRenderable rectangle = ShapeFactory.makeCube(dimensions, Vector3.zero(), material);
-//
-//                    if (currentRectangleNode != null) {
-//                        currentRectangleNode.setParent(null);  // Remove the old rectangle from the scene
-//                    }
-//
-//                    currentRectangleNode = new Node();
-//                    currentRectangleNode.setRenderable(rectangle);
-//                    currentRectangleNode.setWorldPosition(center);
-//                    currentRectangleNode.setWorldRotation(rotation);
-//
-//                    arFragment.getArSceneView().getScene().addChild(currentRectangleNode);
-//                });
-
         MaterialFactory.makeTransparentWithColor(this, new Color(android.graphics.Color.argb(128, 0, 0, 255)))
                 .thenAccept(material -> {
                     ModelRenderable rectangle = ShapeFactory.makeCube(dimensions, Vector3.zero(), material);
 
                     if (currentRectangleNode != null) {
-                        currentRectangleNode.setParent(null);
+                        currentRectangleNode.setParent(null); // Remove the old rectangle
                     }
 
                     currentRectangleNode = new Node();
                     currentRectangleNode.setRenderable(rectangle);
-                    currentRectangleNode.setWorldPosition(center);
+
+                    // Adjust the center vertically so the bottom remains fixed
+                    float verticalOffset = height / 2.0f; // Adjust center to be half height above the base
+                    Vector3 adjustedCenter = new Vector3(center.x, center.y + verticalOffset, center.z);
+
+                    currentRectangleNode.setWorldPosition(adjustedCenter);
                     currentRectangleNode.setWorldRotation(rotation);
 
                     arFragment.getArSceneView().getScene().addChild(currentRectangleNode);
                 });
     }
-
-
 
 
 
@@ -461,6 +455,16 @@ private void saveBitmapToFile(Bitmap bitmap) {
             arFragment.getArSceneView().getPlaneRenderer().setVisible(true);
             for (AnchorNode anchorNode : anchorNodes) {
                 anchorNode.setEnabled(true);
+            }
+        });
+    }
+
+    private void showControls() {
+        runOnUiThread(() -> {
+            if (!heightControls.isShown()) {
+                heightControls.setVisibility(View.VISIBLE);
+                heightControls.setAlpha(0f); // Set the initial alpha to 0
+                heightControls.animate().alpha(1.0f).setDuration(200); // Animate the alpha to make it fade in
             }
         });
     }
