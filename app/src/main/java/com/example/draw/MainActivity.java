@@ -8,6 +8,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -100,9 +101,16 @@ public class MainActivity extends AppCompatActivity {
                     Vector3.zero(),
                     lineMaterial));
         }
+
+
+        public void hideLine() {
+            lineNode.setEnabled(false);
+        }
+
+        public void showLine() {
+            lineNode.setEnabled(true);
+        }
     }
-
-
 
     private ArFragment arFragment;
 
@@ -126,6 +134,9 @@ public class MainActivity extends AppCompatActivity {
     private SeekBar seekBarHeight;
     private Button btnDecreaseHeight, btnIncreaseHeight;
     private float height = 0.1f; // Initial height value
+
+    private float width;
+    private float depth;
 
     private LinearLayout heightControls;
 
@@ -283,7 +294,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Calculate the edge vector from pt1 to pt2
         Vector3 edgeVector = Vector3.subtract(pt2, pt1);
-        float width = edgeVector.length();
+        this.width = edgeVector.length();
         Vector3 edgeDirection = edgeVector.normalized();
 
         // Vector from pt1 to pt3
@@ -296,12 +307,12 @@ public class MainActivity extends AppCompatActivity {
         // Calculate the perpendicular vector from the projection point on the edge to pt3
         Vector3 projectionPoint = Vector3.add(pt1, projection);
         Vector3 perpendicularVector = Vector3.subtract(pt3, projectionPoint);
-        float depth = perpendicularVector.length();  // This is the depth
+        this.depth = perpendicularVector.length();
 
         // Determine the direction of the depth to ensure it extends perpendicular to the edge
         Vector3 crossProduct = Vector3.cross(edgeDirection, Vector3.up());
         if (Vector3.dot(perpendicularVector, crossProduct) < 0) {
-            depth = -depth;
+            this.depth = -this.depth;
         }
 
         // Calculate the center of the rectangle
@@ -313,6 +324,7 @@ public class MainActivity extends AppCompatActivity {
 //        float height = 0.1f;
         updateRectangle(rectangleCenter, width, height, Math.abs(depth), rotation);
         showControls();
+        showCaptureButton();
 
     }
 
@@ -377,31 +389,51 @@ public class MainActivity extends AppCompatActivity {
         new Handler(Looper.getMainLooper()).postDelayed(this::captureAndCropWithBoundsCalculation, 100);
     }
 
-    private void captureAndCropWithBoundsCalculation() {
-        // Calculate bounds
+
+    private Rect computeBoundingBox() {
         int minX = Integer.MAX_VALUE;
         int minY = Integer.MAX_VALUE;
         int maxX = -1;
         int maxY = -1;
 
-        for (AnchorNode anchorNode : anchorNodes) {
-            Log.d(TAG, "anchorNode.getWorldPosition(): " + anchorNode.getWorldPosition());
-            Point screenPoint = worldToScreenPoint(anchorNode.getWorldPosition());
-            if (screenPoint.x < minX) minX = screenPoint.x;
-            if (screenPoint.y < minY) minY = screenPoint.y;
-            if (screenPoint.y < minY) minY = screenPoint.y;
-            if (screenPoint.x > maxX) maxX = screenPoint.x;
-            if (screenPoint.y > maxY) maxY = screenPoint.y;
+        // Assume currentRectangleNode is the node containing the rectangle
+        if (currentRectangleNode != null) {
+            Vector3[] corners = new Vector3[] {
+                    Vector3.add(currentRectangleNode.getWorldPosition(), new Vector3(-width / 2, -height / 2, -depth / 2)),
+                    Vector3.add(currentRectangleNode.getWorldPosition(), new Vector3(width / 2, -height / 2, -depth / 2)),
+                    Vector3.add(currentRectangleNode.getWorldPosition(), new Vector3(width / 2, height / 2, -depth / 2)),
+                    Vector3.add(currentRectangleNode.getWorldPosition(), new Vector3(-width / 2, height / 2, -depth / 2)),
+                    Vector3.add(currentRectangleNode.getWorldPosition(), new Vector3(-width / 2, -height / 2, depth / 2)),
+                    Vector3.add(currentRectangleNode.getWorldPosition(), new Vector3(width / 2, -height / 2, depth / 2)),
+                    Vector3.add(currentRectangleNode.getWorldPosition(), new Vector3(width / 2, height / 2, depth / 2)),
+                    Vector3.add(currentRectangleNode.getWorldPosition(), new Vector3(-width / 2, height / 2, depth / 2))
+            };
+
+            for (Vector3 corner : corners) {
+                Point screenPoint = worldToScreenPoint(corner);
+                minX = Math.min(minX, screenPoint.x);
+                minY = Math.min(minY, screenPoint.y);
+                maxX = Math.max(maxX, screenPoint.x);
+                maxY = Math.max(maxY, screenPoint.y);
+            }
         }
 
-        minX = Math.max(minX, 0);
-        minY = Math.max(minY, 0);
-        maxX = Math.min(maxX, arFragment.getArSceneView().getWidth());
-        maxY = Math.min(maxY, arFragment.getArSceneView().getHeight());
-
-        // Proceed with capture and crop
-        captureAndCrop(minX, minY, maxX - minX, maxY - minY);
+        return new Rect(minX, minY, maxX, maxY);
     }
+
+
+    private void captureAndCropWithBoundsCalculation() {
+        Rect boundingBox = computeBoundingBox();
+
+        // Ensure the coordinates are within the screen bounds
+        int minX = Math.max(boundingBox.left, 0);
+        int minY = Math.max(boundingBox.top, 0);
+        int width = Math.min(boundingBox.width(), arFragment.getArSceneView().getWidth() - minX);
+        int height = Math.min(boundingBox.height(), arFragment.getArSceneView().getHeight() - minY);
+
+        captureAndCrop(minX, minY, width, height);
+    }
+
 
     private void captureAndCrop(int x, int y, int width, int height) {
         ArSceneView view = arFragment.getArSceneView();
@@ -448,7 +480,12 @@ private void saveBitmapToFile(Bitmap bitmap) {
         for (AnchorNode anchorNode : anchorNodes) {
             anchorNode.setEnabled(false);
         }
+        if (connectingLine != null) {
+            connectingLine.hideLine();
+        }
+        hideRectangle();
     }
+
 
     private void restoreARFeatures() {
         runOnUiThread(() -> {
@@ -456,16 +493,37 @@ private void saveBitmapToFile(Bitmap bitmap) {
             for (AnchorNode anchorNode : anchorNodes) {
                 anchorNode.setEnabled(true);
             }
+            if (connectingLine != null) {
+                connectingLine.showLine();
+            }
+            showRectangle();
         });
+    }
+
+
+    private void hideRectangle() {
+        if (currentRectangleNode != null) {
+            runOnUiThread(() -> currentRectangleNode.setEnabled(false));
+        }
+    }
+
+    private void showRectangle() {
+        if (currentRectangleNode != null) {
+            runOnUiThread(() -> currentRectangleNode.setEnabled(true));
+        }
     }
 
     private void showControls() {
         runOnUiThread(() -> {
             if (!heightControls.isShown()) {
                 heightControls.setVisibility(View.VISIBLE);
-                heightControls.setAlpha(0f); // Set the initial alpha to 0
-                heightControls.animate().alpha(1.0f).setDuration(200); // Animate the alpha to make it fade in
+                heightControls.setAlpha(0f);
+                heightControls.animate().alpha(1.0f).setDuration(200);
             }
         });
+    }
+
+    private void showCaptureButton() {
+        runOnUiThread(() -> captureButton.setVisibility(View.VISIBLE));
     }
 }
