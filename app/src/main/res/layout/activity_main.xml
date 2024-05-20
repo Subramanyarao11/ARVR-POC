@@ -20,6 +20,35 @@
         android:visibility="gone"
         android:padding="16dp">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <Button
+                android:id="@+id/captureButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Capture Photo" />
+
+            <Button
+                android:id="@+id/startRecordingButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Start Recording" />
+
+            <Button
+                android:id="@+id/stopRecordingButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Stop Recording"
+                android:visibility="gone" />
+
+        </LinearLayout>
 
         <SeekBar
             android:id="@+id/seekBarHeight"
@@ -31,33 +60,22 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:gravity="center">
 
             <Button
                 android:id="@+id/btnDecreaseHeight"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:text="-" />
 
             <Button
                 android:id="@+id/btnIncreaseHeight"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:text="+" />
 
         </LinearLayout>
-
     </LinearLayout>
-
-    <Button
-        android:id="@+id/captureButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@id/heightControls"
-        android:layout_centerHorizontal="true"
-        android:text="Capture Photo"
-        android:visibility="gone" />
 
 </RelativeLayout>

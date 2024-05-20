@@ -1,15 +1,20 @@
 package com.example.draw;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.media.MediaRecorder;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -36,6 +41,8 @@ import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.rendering.ShapeFactory;
 import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.TransformableNode;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -51,12 +58,9 @@ public class MainActivity extends AppCompatActivity {
         private Material lineMaterial;
 
 
-
-
         public void update(Context context) {
             updateLine();
         }
-
 
 
         public ConnectingLine(TransformableNode node1, TransformableNode node2, Context context) {
@@ -140,6 +144,16 @@ public class MainActivity extends AppCompatActivity {
 
     private LinearLayout heightControls;
 
+    private Button startRecordingButton, stopRecordingButton;
+    private MediaRecorder mediaRecorder;
+    private boolean isRecording = false;
+    private String videoFilePath;
+
+    private static final int REQUEST_WRITE_STORAGE_PERMISSION = 1;
+    private static final int REQUEST_CAMERA_PERMISSION = 2;
+    private static final int REQUEST_RECORD_AUDIO_PERMISSION = 3;
+
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -160,12 +174,10 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "Device not supported");
             return;
         }
-        try
-        {
+        try {
             Log.d(TAG, "Calling setupArFragment()");
             this.getActionBar().hide();
-        }
-        catch (NullPointerException e){
+        } catch (NullPointerException e) {
             Log.d(TAG, "onCreate: " + e);
         }
 
@@ -175,6 +187,12 @@ public class MainActivity extends AppCompatActivity {
         btnDecreaseHeight = findViewById(R.id.btnDecreaseHeight);
         btnIncreaseHeight = findViewById(R.id.btnIncreaseHeight);
         heightControls = findViewById(R.id.heightControls);
+
+        startRecordingButton = findViewById(R.id.startRecordingButton);
+        stopRecordingButton = findViewById(R.id.stopRecordingButton);
+
+        startRecordingButton.setOnClickListener(v -> startRecording());
+        stopRecordingButton.setOnClickListener(v -> stopRecording());
 
         // Set the initial height value to the SeekBar
         seekBarHeight.setProgress((int) (height * 10));
@@ -190,10 +208,12 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {}
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
 
             @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {}
+            public void onStopTrackingTouch(SeekBar seekBar) {
+            }
         });
 
         btnDecreaseHeight.setOnClickListener(v -> {
@@ -211,8 +231,6 @@ public class MainActivity extends AppCompatActivity {
                 calculateRectangle();
             }
         });
-
-
 
 
         captureButton = findViewById(R.id.captureButton);
@@ -280,6 +298,39 @@ public class MainActivity extends AppCompatActivity {
             });
 
         });
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            List<String> permissionsNeeded = new ArrayList<>();
+            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                permissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            }
+            if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                permissionsNeeded.add(Manifest.permission.CAMERA);
+            }
+            if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                permissionsNeeded.add(Manifest.permission.RECORD_AUDIO);
+            }
+            if (!permissionsNeeded.isEmpty()) {
+                requestPermissions(permissionsNeeded.toArray(new String[0]), REQUEST_WRITE_STORAGE_PERMISSION);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_WRITE_STORAGE_PERMISSION) {
+            boolean allPermissionsGranted = true;
+            for (int grantResult : grantResults) {
+                if (grantResult != PackageManager.PERMISSION_GRANTED) {
+                    allPermissionsGranted = false;
+                    break;
+                }
+            }
+            if (!allPermissionsGranted) {
+                Toast.makeText(this, "All permissions are required to proceed", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     private void calculateRectangle() {
@@ -354,9 +405,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
-
-
     private boolean checkIsSupportedDeviceOrFinish(final Activity activity) {
         Log.d(TAG, "Inside checkIsSupportedDeviceOrFinish()");
         String openGlVersionString =
@@ -385,8 +433,16 @@ public class MainActivity extends AppCompatActivity {
 
     private void capturePhoto() {
         hideARFeatures();
+        disableCaptureButton();
         // Delay the capture to ensure visibility changes have time to take effect
         new Handler(Looper.getMainLooper()).postDelayed(this::captureAndCropWithBoundsCalculation, 100);
+    }
+    private void disableCaptureButton() {
+        captureButton.setEnabled(false);
+    }
+
+    private void enableCaptureButton() {
+        captureButton.setEnabled(true);
     }
 
 
@@ -398,7 +454,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Assume currentRectangleNode is the node containing the rectangle
         if (currentRectangleNode != null) {
-            Vector3[] corners = new Vector3[] {
+            Vector3[] corners = new Vector3[]{
                     Vector3.add(currentRectangleNode.getWorldPosition(), new Vector3(-width / 2, -height / 2, -depth / 2)),
                     Vector3.add(currentRectangleNode.getWorldPosition(), new Vector3(width / 2, -height / 2, -depth / 2)),
                     Vector3.add(currentRectangleNode.getWorldPosition(), new Vector3(width / 2, height / 2, -depth / 2)),
@@ -448,31 +504,31 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 runOnUiThread(() -> Toast.makeText(MainActivity.this, "Failed to capture photo", Toast.LENGTH_SHORT).show());
             }
+            enableCaptureButton();
         }, new Handler(Looper.getMainLooper()));
     }
 
-private void saveBitmapToFile(Bitmap bitmap) {
-    // Saving in PNG
-    String displayName = "ARScene_" + System.currentTimeMillis() + ".png";
-    ContentValues values = new ContentValues();
-    values.put(MediaStore.MediaColumns.DISPLAY_NAME, displayName);
-    values.put(MediaStore.MediaColumns.MIME_TYPE, "image/png");
-    values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES);
+    private void saveBitmapToFile(Bitmap bitmap) {
+        // Saving in PNG
+        String displayName = "ARScene_" + System.currentTimeMillis() + ".png";
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.MediaColumns.DISPLAY_NAME, displayName);
+        values.put(MediaStore.MediaColumns.MIME_TYPE, "image/png");
+        values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES);
 
-    // Insert the metadata to the MediaStore and get the Uri
-    Uri uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-    if (uri != null) {
-        try (OutputStream out = getContentResolver().openOutputStream(uri)) {
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
-            Log.d(TAG, "Photo saved to " + uri.toString());
-            runOnUiThread(() -> Toast.makeText(MainActivity.this, "Photo saved to " + uri.toString(), Toast.LENGTH_LONG).show());
-        } catch (IOException e) {
-            Log.e(TAG, "Unable to save image to file.", e);
-            runOnUiThread(() -> Toast.makeText(MainActivity.this, "Failed to save photo", Toast.LENGTH_SHORT).show());
+        // Insert the metadata to the MediaStore and get the Uri
+        Uri uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+        if (uri != null) {
+            try (OutputStream out = getContentResolver().openOutputStream(uri)) {
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+                Log.d(TAG, "Photo saved to " + uri.toString());
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, "Photo saved to " + uri.toString(), Toast.LENGTH_LONG).show());
+            } catch (IOException e) {
+                Log.e(TAG, "Unable to save image to file.", e);
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, "Failed to save photo", Toast.LENGTH_SHORT).show());
+            }
         }
     }
-}
-
 
 
     private void hideARFeatures() {
@@ -484,6 +540,7 @@ private void saveBitmapToFile(Bitmap bitmap) {
             connectingLine.hideLine();
         }
         hideRectangle();
+        startRecordingButton.setVisibility(View.GONE);
     }
 
 
@@ -513,6 +570,20 @@ private void saveBitmapToFile(Bitmap bitmap) {
         }
     }
 
+    private void showStartRecordingButton() {
+        runOnUiThread(() -> {
+            startRecordingButton.setVisibility(View.VISIBLE);
+            stopRecordingButton.setVisibility(View.GONE);
+        });
+    }
+
+    private void showStopRecordingButton() {
+        runOnUiThread(() -> {
+            startRecordingButton.setVisibility(View.GONE);
+            stopRecordingButton.setVisibility(View.VISIBLE);
+        });
+    }
+
     private void showControls() {
         runOnUiThread(() -> {
             if (!heightControls.isShown()) {
@@ -525,5 +596,220 @@ private void saveBitmapToFile(Bitmap bitmap) {
 
     private void showCaptureButton() {
         runOnUiThread(() -> captureButton.setVisibility(View.VISIBLE));
+    }
+
+//    private void startRecording() {
+//        if (isRecording) return;
+//
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+//            List<String> permissionsNeeded = new ArrayList<>();
+//            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+//                permissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+//            }
+//            if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+//                permissionsNeeded.add(Manifest.permission.CAMERA);
+//            }
+//            if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+//                permissionsNeeded.add(Manifest.permission.RECORD_AUDIO);
+//            }
+//            if (!permissionsNeeded.isEmpty()) {
+//                requestPermissions(permissionsNeeded.toArray(new String[0]), REQUEST_WRITE_STORAGE_PERMISSION);
+//                return;
+//            }
+//        }
+//
+//        hideARFeatures();
+//
+//        try {
+//            mediaRecorder = new MediaRecorder();
+//            mediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
+//            mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+//            mediaRecorder.setVideoSize(1280, 720);
+//            mediaRecorder.setVideoFrameRate(30);
+//            mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
+//            mediaRecorder.setVideoEncodingBitRate(10000000);
+//
+//
+//            File externalStorageDir = getExternalFilesDir(Environment.DIRECTORY_MOVIES);
+//            if (externalStorageDir != null) {
+//                File videoFile = new File(externalStorageDir, "ARVideo_" + System.currentTimeMillis() + ".mp4");
+//                Log.d(TAG, "Video File" + videoFile);
+//                videoFilePath = videoFile.getAbsolutePath();
+//                Log.d(TAG, "Video File Path" + videoFilePath);
+//                mediaRecorder.setOutputFile(videoFilePath);
+//            } else {
+//                Log.e(TAG, "Failed to get external storage directory");
+//                return;
+//            }
+//
+//            mediaRecorder.prepare();
+//            mediaRecorder.start();
+//            isRecording = true;
+//            showStopRecordingButton();
+//
+//        } catch (IOException e) {
+//            Log.e(TAG, "MediaRecorder prepare failed", e);
+//            mediaRecorder.reset();
+//            mediaRecorder.release();
+//            mediaRecorder = null;
+//            restoreARFeatures();
+//        }
+//    }
+
+
+    private void startRecording() {
+        if (isRecording) return;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            List<String> permissionsNeeded = new ArrayList<>();
+            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                permissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            }
+            if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                permissionsNeeded.add(Manifest.permission.CAMERA);
+            }
+            if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                permissionsNeeded.add(Manifest.permission.RECORD_AUDIO);
+            }
+            if (!permissionsNeeded.isEmpty()) {
+                requestPermissions(permissionsNeeded.toArray(new String[0]), REQUEST_WRITE_STORAGE_PERMISSION);
+                return;
+            }
+        }
+
+        hideARFeatures();
+
+        try {
+            mediaRecorder = new MediaRecorder();
+            mediaRecorder.setVideoSource(MediaRecorder.VideoSource.DEFAULT);
+            mediaRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
+            mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+            mediaRecorder.setVideoSize(1280, 720);
+            mediaRecorder.setVideoFrameRate(30);
+            mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
+            mediaRecorder.setVideoEncodingBitRate(10000000);
+            mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
+            mediaRecorder.setVideoEncodingBitRate(10000000);
+
+
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.MediaColumns.DISPLAY_NAME, "ARVideo_" + System.currentTimeMillis() + ".mp4");
+                values.put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4");
+                values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_MOVIES);
+
+                Uri collection = MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
+                Uri fileUri = getContentResolver().insert(collection, values);
+                if (fileUri != null) {
+                    videoFilePath = fileUri.toString();
+                    mediaRecorder.setOutputFile(getContentResolver().openFileDescriptor(fileUri, "w").getFileDescriptor());
+                    Log.d(TAG, "Video will be saved to: " + fileUri.toString());
+                } else {
+                    Log.e(TAG, "Failed to create MediaStore entry.");
+                    return;
+                }
+            } else {
+                File externalStorageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES);
+                if (externalStorageDir != null) {
+                    File videoFile = new File(externalStorageDir, "ARVideo_" + System.currentTimeMillis() + ".mp4");
+                    videoFilePath = videoFile.getAbsolutePath();
+                    mediaRecorder.setOutputFile(videoFilePath);
+                    Log.d(TAG, "Video will be saved to: " + videoFilePath);
+                } else {
+                    Log.e(TAG, "Failed to get external storage directory");
+                    return;
+                }
+            }
+
+            mediaRecorder.prepare();
+            mediaRecorder.start();
+            isRecording = true;
+            showStopRecordingButton();
+
+        } catch (IOException e) {
+            Log.e(TAG, "MediaRecorder prepare failed", e);
+            mediaRecorder.reset();
+            mediaRecorder.release();
+            mediaRecorder = null;
+            restoreARFeatures();
+        }
+    }
+
+
+//    private void stopRecording() {
+//        Log.d(TAG, "Stop Recording called");
+//        if (!isRecording) {
+//            return;
+//        }
+//
+//        try {
+//            mediaRecorder.stop();
+//            Log.d(TAG, "Recording Stopped");
+//        } catch (RuntimeException e) {
+//            Log.e(TAG, "MediaRecorder stop failed", e);
+//            // Handle the error gracefully, e.g., delete the incomplete video file
+//            File videoFile = new File(videoFilePath);
+//            if (videoFile.exists()) {
+//                videoFile.delete();
+//            }
+//        } finally {
+//            releaseMediaRecorder();
+//            isRecording = false;
+//            restoreARFeatures();
+//            showStartRecordingButton();
+//
+//            // Optional: Show a notification or a toast message about the saved video file
+//            Toast.makeText(this, "Video saved to " + videoFilePath, Toast.LENGTH_LONG).show();
+//        }
+//    }
+
+    private void stopRecording() {
+        Log.d(TAG, "Stop Recording called");
+        if (!isRecording) {
+            return;
+        }
+
+        try {
+            mediaRecorder.stop();
+            Log.d(TAG, "Recording Stopped");
+        } catch (RuntimeException e) {
+            Log.e(TAG, "MediaRecorder stop failed", e);
+            // Handle the error gracefully, e.g., delete the incomplete video file
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                File videoFile = new File(videoFilePath);
+                if (videoFile.exists()) {
+                    videoFile.delete();
+                }
+            } else {
+                Uri videoUri = Uri.parse(videoFilePath);
+                getContentResolver().delete(videoUri, null, null);
+            }
+        } finally {
+            releaseMediaRecorder();
+            isRecording = false;
+            restoreARFeatures();
+            showStartRecordingButton();
+
+            // Optional: Show a notification or a toast message about the saved video file
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                Log.d(TAG, "Video saved to Movies directory");
+                runOnUiThread(() -> Toast.makeText(this, "Video saved to Movies directory", Toast.LENGTH_LONG).show());
+            } else {
+                Log.d(TAG, "Video saved to " + videoFilePath);
+                runOnUiThread(() -> Toast.makeText(this, "Video saved to " + videoFilePath, Toast.LENGTH_LONG).show());
+            }
+        }
+    }
+
+
+
+    private void releaseMediaRecorder() {
+        if (mediaRecorder != null) {
+            mediaRecorder.reset();
+            mediaRecorder.release();
+            mediaRecorder = null;
+            Log.d(TAG, "Media recorder released");
+        }
     }
 }
