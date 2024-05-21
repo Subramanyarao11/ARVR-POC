@@ -155,6 +155,8 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_CAMERA_PERMISSION = 2;
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 3;
 
+    private Button returnButton;
+
 
     @Override
     protected void onResume() {
@@ -321,6 +323,10 @@ public class MainActivity extends AppCompatActivity {
         int orientation = getResources().getConfiguration().orientation;
         videoRecorder.setVideoQuality(CamcorderProfile.QUALITY_720P, orientation);
         videoRecorder.setSceneView(arFragment.getArSceneView());
+
+
+        returnButton = findViewById(R.id.returnButton);
+        returnButton.setOnClickListener(v -> restoreInitialUI());
     }
 
     @Override
@@ -449,6 +455,7 @@ public class MainActivity extends AppCompatActivity {
     private void capturePhoto() {
         hideARFeatures();
         disableCaptureButton();
+        returnButton.setVisibility(View.VISIBLE);
         // Delay the capture to ensure visibility changes have time to take effect
         new Handler(Looper.getMainLooper()).postDelayed(this::captureAndCropWithBoundsCalculation, 100);
     }
@@ -663,5 +670,13 @@ public class MainActivity extends AppCompatActivity {
         values.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
         values.put(MediaStore.Video.Media.DATA, videoPath);
         getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
+    }
+
+    private void restoreInitialUI() {
+        captureButton.setVisibility(View.VISIBLE);
+        startRecordingButton.setVisibility(View.VISIBLE);
+        stopRecordingButton.setVisibility(View.GONE);
+        returnButton.setVisibility(View.GONE);
+        restoreARFeatures();
     }
 }
