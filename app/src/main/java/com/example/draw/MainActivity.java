@@ -152,8 +152,6 @@ public class MainActivity extends AppCompatActivity {
     private String videoFilePath;
 
     private static final int REQUEST_WRITE_STORAGE_PERMISSION = 1;
-    private static final int REQUEST_CAMERA_PERMISSION = 2;
-    private static final int REQUEST_RECORD_AUDIO_PERMISSION = 3;
 
     private Button returnButton;
 
@@ -177,6 +175,9 @@ public class MainActivity extends AppCompatActivity {
         if (!checkIsSupportedDeviceOrFinish(this)) {
             Log.d(TAG, "Device not supported");
             return;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            checkAndRequestPermissions();
         }
         try {
             Log.d(TAG, "Calling setupArFragment()");
@@ -303,22 +304,6 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            List<String> permissionsNeeded = new ArrayList<>();
-            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                permissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-            }
-            if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                permissionsNeeded.add(Manifest.permission.CAMERA);
-            }
-            if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                permissionsNeeded.add(Manifest.permission.RECORD_AUDIO);
-            }
-            if (!permissionsNeeded.isEmpty()) {
-                requestPermissions(permissionsNeeded.toArray(new String[0]), REQUEST_WRITE_STORAGE_PERMISSION);
-            }
-        }
-
         videoRecorder = new VideoRecorder();
         int orientation = getResources().getConfiguration().orientation;
         videoRecorder.setVideoQuality(CamcorderProfile.QUALITY_720P, orientation);
@@ -333,16 +318,14 @@ public class MainActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == REQUEST_WRITE_STORAGE_PERMISSION) {
-            boolean allPermissionsGranted = true;
-            for (int grantResult : grantResults) {
-                if (grantResult != PackageManager.PERMISSION_GRANTED) {
-                    allPermissionsGranted = false;
-                    break;
+            for (int result : grantResults) {
+                if (result != PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, "All permissions are required to proceed", Toast.LENGTH_SHORT).show();
+                    finish();
+                    return;
                 }
             }
-            if (!allPermissionsGranted) {
-                Toast.makeText(this, "All permissions are required to proceed", Toast.LENGTH_SHORT).show();
-            }
+            // =>=>=> Init
         }
     }
 
@@ -621,50 +604,23 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startRecording() {
-        Log.d(TAG, "Start recoeding called");
-        if (isRecording) return;
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            List<String> permissionsNeeded = new ArrayList<>();
-            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                permissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-            }
-            if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                permissionsNeeded.add(Manifest.permission.CAMERA);
-            }
-            if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                permissionsNeeded.add(Manifest.permission.RECORD_AUDIO);
-            }
-            if (!permissionsNeeded.isEmpty()) {
-                requestPermissions(permissionsNeeded.toArray(new String[0]), REQUEST_WRITE_STORAGE_PERMISSION);
-                return;
-            }
+        if (!isRecording) {
+            hideARFeatures();
+            isRecording = videoRecorder.onToggleRecord();
+            showStopRecordingButton();
         }
-        hideARFeatures();
-        Log.d(TAG, "Hide AR Features called");
-        isRecording = videoRecorder.onToggleRecord();
-        Log.d(TAG, "isRecording" + isRecording);
-        showStopRecordingButton();
-        Log.d(TAG, " showStopRecordingButton called");
     }
 
     private void stopRecording() {
-        Log.d(TAG, " Stop recording called");
-        if (!isRecording) {
-            return;
+        if (isRecording) {
+            isRecording = !videoRecorder.onToggleRecord();
+            restoreARFeatures();
+            showStartRecordingButton();
+            saveVideoPathToMediaStore(videoRecorder.getVideoPath().getAbsolutePath());
         }
-
-        isRecording = !videoRecorder.onToggleRecord();
-        Log.d(TAG, "isRecording" + isRecording);
-        restoreARFeatures();
-        Log.d(TAG, "restore AR Features called");
-        showStartRecordingButton();
-        Log.d(TAG, "showStartRecordingButton called");
-        String videoPath = videoRecorder.getVideoPath().getAbsolutePath();
+    }
+    private void saveVideoPathToMediaStore(String videoPath) {
         Toast.makeText(this, "Video saved: " + videoPath, Toast.LENGTH_SHORT).show();
-        Log.d(TAG, "Video saved: " + videoPath);
-
-        // Send notification of updated content.
         ContentValues values = new ContentValues();
         values.put(MediaStore.Video.Media.TITLE, "Sceneform Video");
         values.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
@@ -679,4 +635,18 @@ public class MainActivity extends AppCompatActivity {
         returnButton.setVisibility(View.GONE);
         restoreARFeatures();
     }
+
+    private void checkAndRequestPermissions() {
+        List<String> permissionsNeeded = new ArrayList<>();
+        if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            permissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        }
+        if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            permissionsNeeded.add(Manifest.permission.CAMERA);
+        }
+        if (!permissionsNeeded.isEmpty()) {
+            requestPermissions(permissionsNeeded.toArray(new String[0]), REQUEST_WRITE_STORAGE_PERMISSION);
+        }
+    }
+
 }
