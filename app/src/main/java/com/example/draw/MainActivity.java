@@ -6,9 +6,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -39,6 +41,7 @@ import com.google.ar.sceneform.rendering.Color;
 import com.google.ar.sceneform.rendering.Material;
 import com.google.ar.sceneform.rendering.MaterialFactory;
 import com.google.ar.sceneform.rendering.ModelRenderable;
+import com.google.ar.sceneform.rendering.Renderable;
 import com.google.ar.sceneform.rendering.ShapeFactory;
 import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.TransformableNode;
@@ -71,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
             lineNode.setParent(node1.getScene());
 
             // Asynchronously create the material
-            MaterialFactory.makeOpaqueWithColor(context, new Color(android.graphics.Color.RED))
+            MaterialFactory.makeOpaqueWithColor(context, new Color(android.graphics.Color.BLUE))
                     .thenAccept(material -> {
                         lineMaterial = material;
                         updateLine();
@@ -102,7 +105,8 @@ public class MainActivity extends AppCompatActivity {
             lineNode.setWorldPosition(Vector3.add(point1, point2).scaled(0.5f));
             lineNode.setWorldRotation(rotation);
             lineNode.setRenderable(ShapeFactory.makeCube(
-                    new Vector3(.01f, .01f, difference.length()),
+//                  new Vector3(.01f, .01f, difference.length()),
+                    new Vector3(0.003f, 0.003f, difference.length()),
                     Vector3.zero(),
                     lineMaterial));
         }
@@ -251,16 +255,29 @@ public class MainActivity extends AppCompatActivity {
         assert arFragment != null;
         ArSceneView arSceneView = arFragment.getArSceneView();
 
-        ModelRenderable.builder()
-                .setSource(this, R.raw.cube)
-//                    .setIsFilamentGltf(true)
-                .build()
-                .thenAccept(renderable -> andyRenderable = renderable)
+//        ModelRenderable.builder()
+//                .setSource(this, R.raw.cube)
+////                    .setIsFilamentGltf(true)
+//                .build()
+//                .thenAccept(renderable -> andyRenderable = renderable)
+//                .exceptionally(throwable -> {
+//                    Log.e(TAG, "Unable to load ModelRenderable", throwable);
+//                    Toast.makeText(MainActivity.this, "Unable to load model", Toast.LENGTH_SHORT).show();
+//                    return null;
+//                });
+
+
+        MaterialFactory.makeOpaqueWithColor(this, new Color(android.graphics.Color.BLUE))
+                .thenAccept(material -> {
+                    ModelRenderable sphereRenderable = ShapeFactory.makeSphere(0.05f, Vector3.zero(), material);
+                    andyRenderable = sphereRenderable;
+                })
                 .exceptionally(throwable -> {
-                    Log.e(TAG, "Unable to load ModelRenderable", throwable);
-                    Toast.makeText(MainActivity.this, "Unable to load model", Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Unable to load sphere renderable", throwable);
+                    Toast.makeText(MainActivity.this, "Unable to load sphere", Toast.LENGTH_SHORT).show();
                     return null;
                 });
+
 
 //
         arFragment.setOnTapArPlaneListener((hitResult, plane, motionEvent) -> {
@@ -291,11 +308,8 @@ public class MainActivity extends AppCompatActivity {
             TransformableNode andy = new TransformableNode(arFragment.getTransformationSystem());
             andy.setParent(anchorNode);
             andy.setRenderable(andyRenderable);
-            // change this vector to alter size of the model
-            // For pole
-//            andy.setLocalScale(new Vector3(0.3f, 0.05f, 0.3f));
-            // for cube
-            andy.setLocalScale(new Vector3(0.05f, 0.05f, 0.05f));
+//            andy.setLocalScale(new Vector3(0.05f, 0.05f, 0.05f));
+            andy.setLocalScale(new Vector3(0.5f, 0.5f, 0.5f));
             andy.select();
             andy.getScaleController().setEnabled(false);
 
@@ -594,21 +608,17 @@ public class MainActivity extends AppCompatActivity {
     private void startRecording() {
         if (!isRecording) {
             hideARFeatures();
-            if (videoRecorder.onToggleRecord()) {
-                isRecording = true;
-                showStopRecordingButton();
-            }
+            isRecording = videoRecorder.onToggleRecord();
+            showStopRecordingButton();
         }
     }
 
     private void stopRecording() {
         if (isRecording) {
-            if (videoRecorder.onToggleRecord()) {
-                isRecording = false;
-                restoreARFeatures();
-                showStartRecordingButton();
-                saveVideoPathToMediaStore(videoRecorder.getVideoPath().getAbsolutePath());
-            }
+            isRecording = !videoRecorder.onToggleRecord();
+            restoreARFeatures();
+            showStartRecordingButton();
+            saveVideoPathToMediaStore(videoRecorder.getVideoPath().getAbsolutePath());
         }
     }
 
@@ -627,8 +637,6 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "Video file does not exist: " + videoPath);
         }
     }
-
-
     private void restoreInitialUI() {
         captureButton.setVisibility(View.VISIBLE);
         startRecordingButton.setVisibility(View.VISIBLE);
