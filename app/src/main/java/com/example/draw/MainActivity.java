@@ -594,27 +594,40 @@ public class MainActivity extends AppCompatActivity {
     private void startRecording() {
         if (!isRecording) {
             hideARFeatures();
-            isRecording = videoRecorder.onToggleRecord();
-            showStopRecordingButton();
+            if (videoRecorder.onToggleRecord()) {
+                isRecording = true;
+                showStopRecordingButton();
+            }
         }
     }
 
     private void stopRecording() {
         if (isRecording) {
-            isRecording = !videoRecorder.onToggleRecord();
-            restoreARFeatures();
-            showStartRecordingButton();
-            saveVideoPathToMediaStore(videoRecorder.getVideoPath().getAbsolutePath());
+            if (videoRecorder.onToggleRecord()) {
+                isRecording = false;
+                restoreARFeatures();
+                showStartRecordingButton();
+                saveVideoPathToMediaStore(videoRecorder.getVideoPath().getAbsolutePath());
+            }
         }
     }
+
     private void saveVideoPathToMediaStore(String videoPath) {
-        Toast.makeText(this, "Video saved: " + videoPath, Toast.LENGTH_SHORT).show();
-        ContentValues values = new ContentValues();
-        values.put(MediaStore.Video.Media.TITLE, "Sceneform Video");
-        values.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
-        values.put(MediaStore.Video.Media.DATA, videoPath);
-        getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
+        File videoFile = new File(videoPath);
+        if (videoFile.exists()) {
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Video.Media.TITLE, "Sceneform Video");
+            values.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
+            values.put(MediaStore.Video.Media.DATA, videoPath);
+            Uri uri = getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
+            if (uri != null) {
+                Toast.makeText(this, "Video saved: " + videoPath, Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            Log.e(TAG, "Video file does not exist: " + videoPath);
+        }
     }
+
 
     private void restoreInitialUI() {
         captureButton.setVisibility(View.VISIBLE);
