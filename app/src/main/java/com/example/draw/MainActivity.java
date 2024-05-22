@@ -117,7 +117,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private ArFragment arFragment;
+    private WritingArFragment arFragment;
+
 
 
     private ConnectingLine connectingLine;
@@ -149,9 +150,6 @@ public class MainActivity extends AppCompatActivity {
 
     private VideoRecorder videoRecorder;
     private boolean isRecording = false;
-    private String videoFilePath;
-
-    private static final int REQUEST_WRITE_STORAGE_PERMISSION = 1;
 
     private Button returnButton;
 
@@ -176,9 +174,6 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "Device not supported");
             return;
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            checkAndRequestPermissions();
-        }
         try {
             Log.d(TAG, "Calling setupArFragment()");
             this.getActionBar().hide();
@@ -196,7 +191,15 @@ public class MainActivity extends AppCompatActivity {
         startRecordingButton = findViewById(R.id.startRecordingButton);
         stopRecordingButton = findViewById(R.id.stopRecordingButton);
 
-        startRecordingButton.setOnClickListener(v -> startRecording());
+        startRecordingButton.setOnClickListener(v -> {
+            if (!arFragment.hasWritePermission()) {
+                Toast.makeText(this, "Permission required to start recording", Toast.LENGTH_SHORT).show();
+                arFragment.launchPermissionSettings();
+                return;
+            }
+            startRecording();
+        });
+
         stopRecordingButton.setOnClickListener(v -> stopRecording());
 
         // Set the initial height value to the SeekBar
@@ -244,7 +247,7 @@ public class MainActivity extends AppCompatActivity {
             capturePhoto();
         });
 
-        arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.arFragment);
+        arFragment = (WritingArFragment) getSupportFragmentManager().findFragmentById(R.id.arFragment);
         assert arFragment != null;
         ArSceneView arSceneView = arFragment.getArSceneView();
 
@@ -312,21 +315,6 @@ public class MainActivity extends AppCompatActivity {
 
         returnButton = findViewById(R.id.returnButton);
         returnButton.setOnClickListener(v -> restoreInitialUI());
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_WRITE_STORAGE_PERMISSION) {
-            for (int result : grantResults) {
-                if (result != PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(this, "All permissions are required to proceed", Toast.LENGTH_SHORT).show();
-                    finish();
-                    return;
-                }
-            }
-            // =>=>=> Init
-        }
     }
 
     @Override
@@ -634,19 +622,6 @@ public class MainActivity extends AppCompatActivity {
         stopRecordingButton.setVisibility(View.GONE);
         returnButton.setVisibility(View.GONE);
         restoreARFeatures();
-    }
-
-    private void checkAndRequestPermissions() {
-        List<String> permissionsNeeded = new ArrayList<>();
-        if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            permissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        }
-        if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            permissionsNeeded.add(Manifest.permission.CAMERA);
-        }
-        if (!permissionsNeeded.isEmpty()) {
-            requestPermissions(permissionsNeeded.toArray(new String[0]), REQUEST_WRITE_STORAGE_PERMISSION);
-        }
     }
 
 }

@@ -17,9 +17,10 @@
 
     <fragment
         android:id="@+id/arFragment"
-        android:name="com.google.ar.sceneform.ux.ArFragment"
+        android:name="com.example.draw.WritingArFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+
 
     <LinearLayout
         android:id="@+id/heightControls"
