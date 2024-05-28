@@ -1,23 +1,16 @@
 package com.example.draw;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 
-import android.Manifest;
+import androidx.appcompat.app.AppCompatActivity;
 import android.app.Activity;
 import android.app.ActivityManager;
-import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.media.CamcorderProfile;
-import android.media.MediaRecorder;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -32,6 +25,8 @@ import android.widget.SeekBar;
 import android.widget.Toast;
 
 import com.google.ar.core.Anchor;
+import com.google.ar.core.Plane;
+import com.google.ar.core.TrackingState;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.Camera;
 import com.google.ar.sceneform.Node;
@@ -41,9 +36,7 @@ import com.google.ar.sceneform.rendering.Color;
 import com.google.ar.sceneform.rendering.Material;
 import com.google.ar.sceneform.rendering.MaterialFactory;
 import com.google.ar.sceneform.rendering.ModelRenderable;
-import com.google.ar.sceneform.rendering.Renderable;
 import com.google.ar.sceneform.rendering.ShapeFactory;
-import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.TransformableNode;
 
 import java.io.File;
@@ -51,7 +44,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
-import com.example.draw.LineRenderer;
 
 import com.google.ar.sceneform.ArSceneView;
 import android.media.MediaScannerConnection;
@@ -158,12 +150,23 @@ public class MainActivity extends AppCompatActivity {
 
     private Button returnButton;
 
+    private boolean updatePlaneDetectionOverlay = true;
 
 
     @Override
     protected void onResume() {
         super.onResume();
         arFragment.getArSceneView().getScene().addOnUpdateListener(frameTime -> {
+            if (arFragment.getArSceneView().getSession() != null) {
+                for (Plane plane : arFragment.getArSceneView().getSession().getAllTrackables(Plane.class)) {
+                    if (plane.getTrackingState() == TrackingState.TRACKING) {
+                        if (updatePlaneDetectionOverlay) {
+                            updateInstructionOverlay("Plane Detected!", "Walk to the corner of the product and tap to set", R.drawable.ic_tap);
+                        }
+                        break;
+                    }
+                }
+            }
             if (connectingLine != null) {
                 connectingLine.update(this);
             }
@@ -186,9 +189,9 @@ public class MainActivity extends AppCompatActivity {
         } catch (NullPointerException e) {
             Log.d(TAG, "onCreate: " + e);
         }
-
         setContentView(R.layout.activity_main);
         findViewById(R.id.instructionOverlay).setVisibility(View.VISIBLE);
+        updateInstructionOverlay("Detect the floor", "Move camera until the white points marking the floor is detected.", R.drawable.ic_instruction);
         seekBarHeight = findViewById(R.id.seekBarHeight);
         btnDecreaseHeight = findViewById(R.id.btnDecreaseHeight);
         btnIncreaseHeight = findViewById(R.id.btnIncreaseHeight);
@@ -302,6 +305,7 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
 
+            updatePlaneDetectionOverlay = false;
             Anchor anchor = hitResult.createAnchor();
             AnchorNode anchorNode = new AnchorNode(anchor);
             anchorNode.setParent(arFragment.getArSceneView().getScene());
@@ -314,6 +318,27 @@ public class MainActivity extends AppCompatActivity {
             andy.setLocalScale(new Vector3(0.5f, 0.5f, 0.5f));
             andy.select();
             andy.getScaleController().setEnabled(false);
+            int anchorCount = anchorNodes.size();
+            Log.d(TAG, "anchorcount" + anchorCount);
+
+
+            runOnUiThread(() -> {
+                switch (anchorCount) {
+                    case 1:
+                        updateInstructionOverlay("First Point Set", "Place the second point at another corner.", R.drawable.ic_second_anchor);
+                        break;
+                    case 2:
+                        updateInstructionOverlay("Second Point Set", "Place the third point to complete the area.", R.drawable.ic_second_anchor);
+                        break;
+                    case 3:
+                        updateInstructionOverlay("All Points Set", "Calculating area...", R.drawable.ic_completed);
+                        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                            updatePlaneDetectionOverlay = true;
+                            findViewById(R.id.instructionOverlay).setVisibility(View.GONE);
+                        }, 3000);
+                        break;
+                }
+            });
 
             andy.addTransformChangedListener((node, node1) -> {
                 if (anchorNodes.size() == 3) {
@@ -667,5 +692,20 @@ public class MainActivity extends AppCompatActivity {
         returnButton.setVisibility(View.GONE);
         restoreARFeatures();
     }
+
+    private void updateInstructionOverlay(String heading, String text, int iconResId) {
+        Log.d(TAG, "Updating overlay to: " + heading + " / " + text);
+        InstructionOverlay instructionOverlay = findViewById(R.id.instructionOverlay);
+        if (instructionOverlay != null) {
+            instructionOverlay.setHeadingText(heading);
+            instructionOverlay.setText(text);
+            instructionOverlay.setIcon(getResources().getDrawable(iconResId, getTheme()));
+            instructionOverlay.invalidate();
+        } else {
+            Log.e(TAG, "InstructionOverlay is null");
+        }
+    }
+
+
 
 }
