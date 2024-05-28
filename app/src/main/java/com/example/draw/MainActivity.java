@@ -188,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         setContentView(R.layout.activity_main);
-
+        findViewById(R.id.instructionOverlay).setVisibility(View.VISIBLE);
         seekBarHeight = findViewById(R.id.seekBarHeight);
         btnDecreaseHeight = findViewById(R.id.btnDecreaseHeight);
         btnIncreaseHeight = findViewById(R.id.btnIncreaseHeight);
