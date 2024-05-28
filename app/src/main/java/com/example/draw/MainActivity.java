@@ -54,6 +54,7 @@ import java.util.List;
 import com.example.draw.LineRenderer;
 
 import com.google.ar.sceneform.ArSceneView;
+import android.media.MediaScannerConnection;
 public class MainActivity extends AppCompatActivity {
     static class ConnectingLine {
         private final Node lineNode;
@@ -156,6 +157,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean isRecording = false;
 
     private Button returnButton;
+
 
 
     @Override
@@ -613,18 +615,38 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+//    private void stopRecording() {
+//        if (isRecording) {
+//            isRecording = !videoRecorder.onToggleRecord();
+//            restoreARFeatures();
+//            showStartRecordingButton();
+//            saveVideoPathToMediaStore(videoRecorder.getVideoPath().getAbsolutePath());
+//        }
+//    }
+
     private void stopRecording() {
         if (isRecording) {
             isRecording = !videoRecorder.onToggleRecord();
             restoreARFeatures();
             showStartRecordingButton();
-            saveVideoPathToMediaStore(videoRecorder.getVideoPath().getAbsolutePath());
+
+            // Get the video file path
+            String videoPath = videoRecorder.getVideoPath().getAbsolutePath();
+
+            // Check if the video file exists and is not empty
+            File videoFile = new File(videoPath);
+            if (videoFile.exists() && videoFile.length() > 0) {
+                // Use MediaScannerConnection to scan the video file
+                MediaScannerConnection.scanFile(MainActivity.this, new String[] { videoPath }, null, null);
+            } else {
+                Log.e(TAG, "Video file does not exist or is empty: " + videoPath);
+            }
         }
     }
 
     private void saveVideoPathToMediaStore(String videoPath) {
         File videoFile = new File(videoPath);
-        if (videoFile.exists()) {
+        if (videoFile.exists() && videoFile.length() > 0) {
             ContentValues values = new ContentValues();
             values.put(MediaStore.Video.Media.TITLE, "Sceneform Video");
             values.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
@@ -634,9 +656,10 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "Video saved: " + videoPath, Toast.LENGTH_SHORT).show();
             }
         } else {
-            Log.e(TAG, "Video file does not exist: " + videoPath);
+            Log.e(TAG, "Video file does not exist or is empty: " + videoPath);
         }
     }
+
     private void restoreInitialUI() {
         captureButton.setVisibility(View.VISIBLE);
         startRecordingButton.setVisibility(View.VISIBLE);
