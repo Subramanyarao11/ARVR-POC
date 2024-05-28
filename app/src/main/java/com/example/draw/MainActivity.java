@@ -6,6 +6,7 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -20,6 +21,7 @@ import android.util.Log;
 import android.view.PixelCopy;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.Toast;
@@ -44,6 +46,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import com.google.ar.sceneform.ArSceneView;
 import android.media.MediaScannerConnection;
@@ -177,17 +180,18 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate: ");
-
+        try
+        {
+            Log.d(TAG, "Calling setupArFragment()");
+            this.getActionBar().hide();
+        }
+        catch (NullPointerException e){
+            Log.d(TAG, "onCreate: " + e);
+        }
         Log.d(TAG, "Checking if device is supported");
         if (!checkIsSupportedDeviceOrFinish(this)) {
             Log.d(TAG, "Device not supported");
             return;
-        }
-        try {
-            Log.d(TAG, "Calling setupArFragment()");
-            this.getActionBar().hide();
-        } catch (NullPointerException e) {
-            Log.d(TAG, "onCreate: " + e);
         }
         setContentView(R.layout.activity_main);
         findViewById(R.id.instructionOverlay).setVisibility(View.VISIBLE);
@@ -199,6 +203,19 @@ public class MainActivity extends AppCompatActivity {
 
         startRecordingButton = findViewById(R.id.startRecordingButton);
         stopRecordingButton = findViewById(R.id.stopRecordingButton);
+
+        ImageButton btnReset = findViewById(R.id.btnReset);
+        btnReset.setOnClickListener(view -> {
+            Intent restartIntent = new Intent(getApplicationContext(), MainActivity.class);
+            startActivity(restartIntent);
+            finish();
+        });
+
+        ImageButton btnBack = findViewById(R.id.btnBack);
+        btnBack.setOnClickListener(v -> {
+            Log.d(TAG, "Return button clicked");
+            finish();
+        });
 
         startRecordingButton.setOnClickListener(v -> {
             if (!arFragment.hasWritePermission()) {
