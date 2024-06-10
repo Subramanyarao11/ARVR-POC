@@ -237,6 +237,7 @@ public class MainActivity extends AppCompatActivity {
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 height = progress / 100f;  // Smaller increment
                 if (anchorNodes.size() == 3) {
+                    hidePointCloud();
                     calculateRectangle();
                 }
             }
@@ -372,7 +373,10 @@ public class MainActivity extends AppCompatActivity {
 
 
         returnButton = findViewById(R.id.returnButton);
-        returnButton.setOnClickListener(v -> restoreInitialUI());
+        returnButton.setOnClickListener(v -> {
+            restoreInitialUI();
+            unlockHeightAdjustment();
+        });
     }
 
     @Override
@@ -482,6 +486,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void capturePhoto() {
+        lockHeightAdjustment();
         hideARFeatures();
         disableCaptureButton();
         returnButton.setVisibility(View.VISIBLE);
@@ -649,13 +654,65 @@ public class MainActivity extends AppCompatActivity {
         runOnUiThread(() -> captureButton.setVisibility(View.VISIBLE));
     }
 
+    private void lockNodeTransformations() {
+        for (AnchorNode anchorNode : anchorNodes) {
+            if (!anchorNode.getChildren().isEmpty() && anchorNode.getChildren().get(0) instanceof TransformableNode) {
+                TransformableNode transformableNode = (TransformableNode) anchorNode.getChildren().get(0);
+                transformableNode.getTranslationController().setEnabled(false);
+                transformableNode.getRotationController().setEnabled(false);
+                transformableNode.getScaleController().setEnabled(false);
+            }
+        }
+    }
+
+    private void unlockNodeTransformations() {
+        for (AnchorNode anchorNode : anchorNodes) {
+            if (!anchorNode.getChildren().isEmpty() && anchorNode.getChildren().get(0) instanceof TransformableNode) {
+                TransformableNode transformableNode = (TransformableNode) anchorNode.getChildren().get(0);
+                transformableNode.getTranslationController().setEnabled(true);
+                transformableNode.getRotationController().setEnabled(true);
+                transformableNode.getScaleController().setEnabled(true);
+            }
+        }
+    }
+
+    private void hidePointCloud() {
+        arFragment.getArSceneView().getPlaneRenderer().setEnabled(false);
+    }
+
+    private void showPointCloud() {
+        arFragment.getArSceneView().getPlaneRenderer().setEnabled(true);
+    }
+
+
+
+    private void lockHeightAdjustment() {
+        seekBarHeight.setEnabled(false);
+        btnDecreaseHeight.setEnabled(false);
+        btnIncreaseHeight.setEnabled(false);
+        lockNodeTransformations();
+    }
+
+    private void unlockHeightAdjustment() {
+        seekBarHeight.setEnabled(true);
+        btnDecreaseHeight.setEnabled(true);
+        btnIncreaseHeight.setEnabled(true);
+        unlockNodeTransformations();
+    }
+
+
+
     private void startRecording() {
         if (!isRecording) {
             hideARFeatures();
+            lockHeightAdjustment();
             isRecording = videoRecorder.onToggleRecord();
             showStopRecordingButton();
         }
     }
+
+
+
 
 //    private void stopRecording() {
 //        if (isRecording) {
@@ -670,6 +727,7 @@ public class MainActivity extends AppCompatActivity {
         if (isRecording) {
             isRecording = !videoRecorder.onToggleRecord();
             restoreARFeatures();
+            unlockHeightAdjustment();
             showStartRecordingButton();
 
             // Get the video file path
@@ -722,7 +780,4 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "InstructionOverlay is null");
         }
     }
-
-
-
 }
