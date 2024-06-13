@@ -155,6 +155,11 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean updatePlaneDetectionOverlay = true;
 
+    private boolean isAutoCapturing = false;
+    private Handler autoCaptureHandler = new Handler(Looper.getMainLooper());
+    private Runnable autoCaptureRunnable;
+
+
 
     @Override
     protected void onResume() {
@@ -699,6 +704,49 @@ public class MainActivity extends AppCompatActivity {
         btnIncreaseHeight.setEnabled(true);
         unlockNodeTransformations();
     }
+
+    public void onAutoCaptureClicked(View view) {
+        if (!isAutoCapturing) {
+            startAutoCapture();
+        } else {
+            stopAutoCapture();
+        }
+    }
+
+    private void startAutoCapture() {
+        isAutoCapturing = true;
+        autoCaptureRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (isAutoCapturing) {
+                    capturePhoto();
+                    autoCaptureHandler.postDelayed(this, 5000);
+                }
+            }
+        };
+        autoCaptureRunnable.run();
+        showStopAutoCaptureButton();
+    }
+
+    private void stopAutoCapture() {
+        isAutoCapturing = false;
+        autoCaptureHandler.removeCallbacks(autoCaptureRunnable);
+        showStartAutoCaptureButton();
+    }
+
+    private void showStartAutoCaptureButton() {
+        Button btn = findViewById(R.id.autoCaptureButton);
+        btn.setText("Start Auto Capture");
+    }
+
+    private void showStopAutoCaptureButton() {
+        Button btn = findViewById(R.id.autoCaptureButton);
+        btn.setText("Stop Auto Capture");
+    }
+
+
+
+
 
 
 

@@ -83,6 +83,15 @@
                 android:text="Capture Photo" />
 
             <Button
+                android:id="@+id/autoCaptureButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Auto Capture"
+                android:onClick="onAutoCaptureClicked"
+                />
+
+            <Button
                 android:id="@+id/startRecordingButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
