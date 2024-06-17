@@ -22,10 +22,12 @@ import android.view.PixelCopy;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
+import com.airbnb.lottie.LottieAnimationView;
 import com.google.ar.core.Anchor;
 import com.google.ar.core.Plane;
 import com.google.ar.core.TrackingState;
@@ -159,6 +161,12 @@ public class MainActivity extends AppCompatActivity {
     private Handler autoCaptureHandler = new Handler(Looper.getMainLooper());
     private Runnable autoCaptureRunnable;
 
+    private LottieAnimationView lottieArrowLeft, lottieArrowRight;
+    private ImageView imgPhones;
+
+    private boolean visualsShown = false;
+
+
 
 
     @Override
@@ -208,6 +216,10 @@ public class MainActivity extends AppCompatActivity {
 
         startRecordingButton = findViewById(R.id.startRecordingButton);
         stopRecordingButton = findViewById(R.id.stopRecordingButton);
+
+        lottieArrowLeft = findViewById(R.id.lottieArrowLeft);
+        lottieArrowRight = findViewById(R.id.lottieArrowRight);
+        imgPhones = findViewById(R.id.imgPhones);
 
         ImageButton btnReset = findViewById(R.id.btnReset);
         btnReset.setOnClickListener(view -> {
@@ -276,7 +288,7 @@ public class MainActivity extends AppCompatActivity {
         captureButton = findViewById(R.id.captureButton);
         captureButton.setOnClickListener(v -> {
             Log.d(TAG, "Capture button clicked");
-            capturePhoto();
+            capturePhoto(true);
         });
 
         arFragment = (WritingArFragment) getSupportFragmentManager().findFragmentById(R.id.arFragment);
@@ -489,10 +501,31 @@ public class MainActivity extends AppCompatActivity {
         return new Point((int) screenPoint.x, (int) screenPoint.y);
     }
 
+    private void showForShortDuration() {
+        lottieArrowLeft.setVisibility(View.VISIBLE);
+        imgPhones.setVisibility(View.VISIBLE);
+        lottieArrowRight.setVisibility(View.VISIBLE);
+        SimpleInstructionOverlay simpleOverlay = findViewById(R.id.simpleInstructionOverlay);
+        simpleOverlay.setText("Got it, move your smartphone to the next box either to the left or right.");
+        simpleOverlay.setVisibility(View.VISIBLE);
 
-    private void capturePhoto() {
+        // Hide after 5 seconds
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            lottieArrowLeft.setVisibility(View.GONE);
+            imgPhones.setVisibility(View.GONE);
+            lottieArrowRight.setVisibility(View.GONE);
+            simpleOverlay.setVisibility(View.GONE);
+        }, 5000);
+    }
+
+
+
+    private void capturePhoto(boolean showVisuals) {
         lockHeightAdjustment();
         hideARFeatures();
+        if (showVisuals) {
+            showVisualsForShortDuration(); // Use the centralized method
+        }
         disableCaptureButton();
         returnButton.setVisibility(View.VISIBLE);
         // Delay the capture to ensure visibility changes have time to take effect
@@ -707,6 +740,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void onAutoCaptureClicked(View view) {
         if (!isAutoCapturing) {
+            showVisualsForShortDuration();
             startAutoCapture();
         } else {
             stopAutoCapture();
@@ -719,7 +753,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 if (isAutoCapturing) {
-                    capturePhoto();
+                    capturePhoto(false);
                     autoCaptureHandler.postDelayed(this, 5000);
                 }
             }
@@ -732,6 +766,7 @@ public class MainActivity extends AppCompatActivity {
         isAutoCapturing = false;
         autoCaptureHandler.removeCallbacks(autoCaptureRunnable);
         showStartAutoCaptureButton();
+        visualsShown=false;
     }
 
     private void showStartAutoCaptureButton() {
@@ -752,10 +787,18 @@ public class MainActivity extends AppCompatActivity {
 
     private void startRecording() {
         if (!isRecording) {
+            showVisualsForShortDuration();
             hideARFeatures();
             lockHeightAdjustment();
             isRecording = videoRecorder.onToggleRecord();
             showStopRecordingButton();
+        }
+    }
+
+    private void showVisualsForShortDuration() {
+        if (!visualsShown) {
+            showForShortDuration();
+            visualsShown = true;
         }
     }
 
@@ -777,7 +820,7 @@ public class MainActivity extends AppCompatActivity {
             restoreARFeatures();
             unlockHeightAdjustment();
             showStartRecordingButton();
-
+            visualsShown = false;
             // Get the video file path
             String videoPath = videoRecorder.getVideoPath().getAbsolutePath();
 
