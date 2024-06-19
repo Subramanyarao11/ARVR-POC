@@ -2,6 +2,8 @@ package com.example.draw;
 
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.RecyclerView;
+
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.ContentValues;
@@ -166,6 +168,12 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean visualsShown = false;
 
+    private ArrayList<Bitmap> capturedImages = new ArrayList<>();
+
+    private RecyclerView recyclerView;
+    private ImageAdapter imageAdapter;
+
+
 
 
 
@@ -220,6 +228,11 @@ public class MainActivity extends AppCompatActivity {
         lottieArrowLeft = findViewById(R.id.lottieArrowLeft);
         lottieArrowRight = findViewById(R.id.lottieArrowRight);
         imgPhones = findViewById(R.id.imgPhones);
+
+        recyclerView = findViewById(R.id.imageCarousel);
+        imageAdapter = new ImageAdapter(this, capturedImages);
+        recyclerView.setAdapter(imageAdapter);
+
 
         ImageButton btnReset = findViewById(R.id.btnReset);
         btnReset.setOnClickListener(view -> {
@@ -502,6 +515,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showForShortDuration() {
+        captureButton.setEnabled(false);
         lottieArrowLeft.setVisibility(View.VISIBLE);
         imgPhones.setVisibility(View.VISIBLE);
         lottieArrowRight.setVisibility(View.VISIBLE);
@@ -509,13 +523,14 @@ public class MainActivity extends AppCompatActivity {
         simpleOverlay.setText("Got it, move your smartphone to the next box either to the left or right.");
         simpleOverlay.setVisibility(View.VISIBLE);
 
-        // Hide after 5 seconds
+        // Hide after 3 seconds
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             lottieArrowLeft.setVisibility(View.GONE);
             imgPhones.setVisibility(View.GONE);
             lottieArrowRight.setVisibility(View.GONE);
             simpleOverlay.setVisibility(View.GONE);
-        }, 5000);
+            captureButton.setEnabled(true);
+        }, 3000);
     }
 
 
@@ -524,12 +539,25 @@ public class MainActivity extends AppCompatActivity {
         lockHeightAdjustment();
         hideARFeatures();
         if (showVisuals) {
-            showVisualsForShortDuration(); // Use the centralized method
+            showVisualsForShortDuration();
+            // Perform capture after the delay
+            new Handler(Looper.getMainLooper()).postDelayed(this::captureAndProcessImage, 3500);
+        }
+        else {
+            // No visuals to show, just delay the capture slightly to ensure UI consistency
+            // New Handler(Looper.getMainLooper()).postDelayed(this::captureAndProcessImage, 100);
+            // changed it to 3500 so that when we come from autoCapture flow we show animation correctly and then capture
+            new Handler(Looper.getMainLooper()).postDelayed(this::captureAndProcessImage, 3500);
         }
         disableCaptureButton();
         returnButton.setVisibility(View.VISIBLE);
-        // Delay the capture to ensure visibility changes have time to take effect
-        new Handler(Looper.getMainLooper()).postDelayed(this::captureAndCropWithBoundsCalculation, 100);
+        // commented out as it was being used earlier
+//        new Handler(Looper.getMainLooper()).postDelayed(this::captureAndCropWithBoundsCalculation, 100);
+    }
+
+    private void captureAndProcessImage() {
+        captureAndCropWithBoundsCalculation();
+        enableCaptureButton();
     }
     private void disableCaptureButton() {
         captureButton.setEnabled(false);
@@ -615,6 +643,14 @@ public class MainActivity extends AppCompatActivity {
         if (uri != null) {
             try (OutputStream out = getContentResolver().openOutputStream(uri)) {
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+                capturedImages.add(bitmap);
+                if (imageAdapter != null) {
+                    runOnUiThread(() -> {
+                        imageAdapter.notifyDataSetChanged();
+                        recyclerView.scrollToPosition(capturedImages.size() - 1);
+                        updateCarouselVisibility();
+                    });
+                }
                 Log.d(TAG, "Photo saved to " + uri.toString());
                 runOnUiThread(() -> Toast.makeText(MainActivity.this, "Photo saved to " + uri.toString(), Toast.LENGTH_LONG).show());
             } catch (IOException e) {
@@ -684,6 +720,7 @@ public class MainActivity extends AppCompatActivity {
                 heightControls.setVisibility(View.VISIBLE);
                 heightControls.setAlpha(0f);
                 heightControls.animate().alpha(1.0f).setDuration(200);
+                heightControls.requestLayout();
             }
         });
     }
@@ -871,4 +908,13 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "InstructionOverlay is null");
         }
     }
+
+    private void updateCarouselVisibility() {
+        if (capturedImages.isEmpty()) {
+            recyclerView.setVisibility(View.GONE);
+        } else {
+            recyclerView.setVisibility(View.VISIBLE);
+        }
+    }
+
 }
