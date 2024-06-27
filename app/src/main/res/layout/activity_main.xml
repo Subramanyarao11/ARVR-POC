@@ -6,15 +6,6 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <Button
-        android:id="@+id/returnButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Return"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:visibility="gone"
-        android:layout_marginTop="20dp"/>
 
     <ImageButton
         android:id="@+id/btnBack"
@@ -63,65 +54,6 @@
 
 
 
-
-    <com.example.draw.SimpleInstructionOverlay
-        android:id="@+id/simpleInstructionOverlay"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_above="@id/heightControls"
-        android:layout_marginHorizontal="10dp"
-        android:layout_marginBottom="10dp"
-        android:visibility="gone" />
-
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@id/simpleInstructionOverlay"
-        android:layout_centerInParent="true"
-        android:orientation="horizontal">
-
-        <com.airbnb.lottie.LottieAnimationView
-            android:id="@+id/lottieArrowLeft"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            app:lottie_autoPlay="true"
-            app:lottie_loop="true"
-            android:scaleX="-1"
-            app:lottie_fileName="right.json"
-            android:visibility="gone" />
-
-        <ImageView
-            android:id="@+id/imgPhones"
-            android:layout_width="70dp"
-            android:layout_height="40dp"
-            android:src="@drawable/mobile"
-            android:scaleType="fitCenter"
-            android:visibility="gone" />
-
-        <com.airbnb.lottie.LottieAnimationView
-            android:id="@+id/lottieArrowRight"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            app:lottie_autoPlay="true"
-            app:lottie_loop="true"
-            android:visibility="gone"
-            app:lottie_fileName="right.json" />
-    </LinearLayout>
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/imageCarousel"
-        android:layout_width="match_parent"
-        android:layout_height="100dp"
-        android:layout_above="@id/heightControls"
-        android:layout_margin="8dp"
-        android:background="@android:color/white"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        android:orientation="horizontal"
-        android:scrollbars="horizontal"
-        android:visibility="gone"/>
-
-
-
     <LinearLayout
         android:id="@+id/heightControls"
         android:layout_width="match_parent"
@@ -130,45 +62,6 @@
         android:orientation="vertical"
         android:visibility="invisible"
         android:padding="16dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center">
-
-            <Button
-                android:id="@+id/captureButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Capture Photo" />
-
-            <Button
-                android:id="@+id/autoCaptureButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Auto Capture"
-                android:onClick="onAutoCaptureClicked"
-                />
-
-            <Button
-                android:id="@+id/startRecordingButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Start Recording" />
-
-            <Button
-                android:id="@+id/stopRecordingButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Stop Recording"
-                android:visibility="gone" />
-
-        </LinearLayout>
 
         <SeekBar
             android:id="@+id/seekBarHeight"
@@ -198,4 +91,12 @@
         </LinearLayout>
     </LinearLayout>
 
+    <Button
+        android:id="@+id/btnProceed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Proceed"
+        android:layout_centerHorizontal="true"
+        android:layout_above="@id/heightControls"
+        android:visibility="gone" />
 </RelativeLayout>

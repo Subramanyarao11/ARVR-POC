@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:theme="@style/MaterialTheme"
+    android:background="#D32F2F">
+
+    <!-- Question mark button -->
+    <ImageButton
+        android:id="@+id/questionButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/question"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Help"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_margin="16dp"/>
+
+    <!-- Mode Toggle -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/toggleContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="0dp"
+        app:strokeColor="@android:color/white"
+        app:layout_constraintTop_toTopOf="@id/questionButton"
+        app:layout_constraintBottom_toBottomOf="@id/questionButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/toggleButton"
+            android:layout_marginHorizontal="8dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:singleSelection="true"
+            app:selectionRequired="true">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/autoButton"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Manual"
+                android:textColor="@android:color/white"
+                app:backgroundTint="#3F51B5"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/manualButton"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Auto"
+                android:textColor="@android:color/black"
+                app:backgroundTint="@android:color/white"/>
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+    </com.google.android.material.card.MaterialCardView>
+
+
+<!--  close button-->
+    <ImageButton
+        android:id="@+id/closeButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/cta"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Close"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_margin="16dp"/>
+
+<!-- text button   -->
+    <TextView
+        android:id="@+id/progressText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0/24"
+        android:textSize="16sp"
+        android:background="@drawable/progress_bg"
+        android:textColor="#FFFFFF"
+        android:padding="10dp"
+        android:layout_marginTop="8dp"
+        app:layout_constraintTop_toBottomOf="@id/closeButton"
+        app:layout_constraintStart_toStartOf="@id/closeButton"
+        app:layout_constraintEnd_toEndOf="@id/closeButton"/>
+
+    <!-- Instruction Text -->
+    <com.example.draw.SimpleInstructionOverlay
+        android:id="@+id/instructionOverlay"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/toggleContainer"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginHorizontal="40dp"
+        android:layout_marginTop="12dp"
+        app:layout_constraintHorizontal_bias="0.5"/>
+
+<!--  AR Fragment  -->
+    <fragment
+        android:id="@+id/arFragment"
+        android:name="com.google.ar.sceneform.ux.ArFragment"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+    <!-- Bottom Bar -->
+    <LinearLayout
+        android:id="@+id/bottomBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#1D212F"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:padding="16dp"
+        android:gravity="center_vertical">
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp"
+            android:background="@android:color/transparent">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:background="@android:color/white"
+                android:padding="4dp">
+
+                <ImageButton
+                    android:id="@+id/cameraButton"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/camera"
+                    android:background="@drawable/camera_bg"
+                    android:contentDescription="Camera"
+                    android:padding="12dp"/>
+
+                <Space
+                    android:layout_width="4dp"
+                    android:layout_height="match_parent" />
+
+                <ImageButton
+                    android:id="@+id/videoButton"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/video"
+                    android:background="@android:color/transparent"
+                    android:contentDescription="Video"
+                    android:padding="12dp"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <ImageButton
+            android:id="@+id/shutterButton"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:background="@drawable/shutter"
+            android:contentDescription="Capture"/>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <Button
+            android:id="@+id/proceedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Proceed"
+            android:textColor="#FFFFFF"
+            android:background="@drawable/proceed_bg" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

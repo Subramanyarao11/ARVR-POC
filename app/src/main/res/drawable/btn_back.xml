@@ -1,0 +1,18 @@
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true">
+        <!-- Selected state -->
+        <shape android:shape="rectangle">
+            <corners android:radius="20dp" />
+            <solid android:color="#3F51B5" /> <!-- Dark blue background for selected -->
+            <stroke android:width="2dp" android:color="#FFFFFF" /> <!-- White border -->
+        </shape>
+    </item>
+    <item>
+        <!-- Default state -->
+        <shape android:shape="rectangle">
+            <corners android:radius="20dp" />
+            <solid android:color="#FFFFFF" /> <!-- White background for default -->
+            <stroke android:width="2dp" android:color="#3F51B5" /> <!-- Dark blue border -->
+        </shape>
+    </item>
+</selector>
