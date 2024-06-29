@@ -5,7 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:theme="@style/MaterialTheme"
-    android:background="#D32F2F">
+    android:background="#D32F2F"
+    >
 
     <!-- Question mark button -->
     <ImageButton
@@ -17,7 +18,9 @@
         android:contentDescription="Help"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:layout_margin="16dp"/>
+        android:layout_margin="16dp"
+        android:elevation="6dp"
+        />
 
     <!-- Mode Toggle -->
     <com.google.android.material.card.MaterialCardView
@@ -31,7 +34,8 @@
         app:layout_constraintTop_toTopOf="@id/questionButton"
         app:layout_constraintBottom_toBottomOf="@id/questionButton"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintEnd_toEndOf="parent"
+        >
 
         <com.google.android.material.button.MaterialButtonToggleGroup
             android:id="@+id/toggleButton"
@@ -39,7 +43,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:singleSelection="true"
-            app:selectionRequired="true">
+            app:selectionRequired="true"
+            >
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/autoButton"
@@ -72,7 +77,9 @@
         android:contentDescription="Close"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:layout_margin="16dp"/>
+        android:layout_margin="16dp"
+        android:elevation="10dp"
+        />
 
 <!-- text button   -->
     <TextView
@@ -87,7 +94,9 @@
         android:layout_marginTop="8dp"
         app:layout_constraintTop_toBottomOf="@id/closeButton"
         app:layout_constraintStart_toStartOf="@id/closeButton"
-        app:layout_constraintEnd_toEndOf="@id/closeButton"/>
+        app:layout_constraintEnd_toEndOf="@id/closeButton"
+        android:elevation="6dp"
+        />
 
     <!-- Instruction Text -->
     <com.example.draw.SimpleInstructionOverlay
@@ -99,16 +108,16 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginHorizontal="40dp"
         android:layout_marginTop="12dp"
-        app:layout_constraintHorizontal_bias="0.5"/>
+        app:layout_constraintHorizontal_bias="0.5"
+        android:elevation="10dp"
+        />
 
 <!--  AR Fragment  -->
     <fragment
         android:id="@+id/arFragment"
-        android:name="com.google.ar.sceneform.ux.ArFragment"
+        android:name="com.example.draw.WritingArFragment"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent" />
+        android:layout_height="match_parent" />
 
     <!-- Bottom Bar -->
     <LinearLayout

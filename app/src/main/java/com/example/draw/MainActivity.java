@@ -330,8 +330,24 @@ public class MainActivity extends AppCompatActivity {
 
     public void onProceedClicked(View view) {
         Intent intent = new Intent(this, ManualMode.class);
+        intent.putExtra("width", width);
+        intent.putExtra("height", height);
+        intent.putExtra("depth", depth);
+        Vector3 pt1 = anchorNodes.get(0).getWorldPosition();
+        Vector3 pt2 = anchorNodes.get(1).getWorldPosition();
+        Vector3 pt3 = anchorNodes.get(2).getWorldPosition();
+        intent.putExtra("pt1X", pt1.x);
+        intent.putExtra("pt1Y", pt1.y);
+        intent.putExtra("pt1Z", pt1.z);
+        intent.putExtra("pt2X", pt2.x);
+        intent.putExtra("pt2Y", pt2.y);
+        intent.putExtra("pt2Z", pt2.z);
+        intent.putExtra("pt3X", pt3.x);
+        intent.putExtra("pt3Y", pt3.y);
+        intent.putExtra("pt3Z", pt3.z);
         startActivity(intent);
     }
+
 
 
     @Override
