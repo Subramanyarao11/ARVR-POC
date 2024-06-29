@@ -26,6 +26,8 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
@@ -55,6 +57,7 @@ import java.util.Objects;
 import com.google.ar.sceneform.ArSceneView;
 import android.media.MediaScannerConnection;
 public class MainActivity extends AppCompatActivity {
+
     static class ConnectingLine {
         private final Node lineNode;
         private final TransformableNode node1, node2;
@@ -137,8 +140,10 @@ public class MainActivity extends AppCompatActivity {
 
     private static final double MIN_OPENGL_VERSION = 3.0;
 
-    private Button captureButton;
-
+//    private Button captureButton;
+//
+    private ImageButton captureButton;
+//
     private Node currentRectangleNode = null;
 
     private SeekBar seekBarHeight;
@@ -199,6 +204,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        setContentView(R.layout.activity_main);
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate: ");
         try
@@ -214,13 +220,14 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "Device not supported");
             return;
         }
-        setContentView(R.layout.activity_main);
+
         findViewById(R.id.instructionOverlay).setVisibility(View.VISIBLE);
         updateInstructionOverlay("Detect the floor", "Move camera until the white points marking the floor is detected.", R.drawable.ic_instruction);
-        seekBarHeight = findViewById(R.id.seekBarHeight);
         btnDecreaseHeight = findViewById(R.id.btnDecreaseHeight);
         btnIncreaseHeight = findViewById(R.id.btnIncreaseHeight);
         heightControls = findViewById(R.id.heightControls);
+        seekBarHeight = findViewById(R.id.seekBarHeight);
+        captureButton = findViewById(R.id.captureButton);
 
         startRecordingButton = findViewById(R.id.startRecordingButton);
         stopRecordingButton = findViewById(R.id.stopRecordingButton);
@@ -298,7 +305,34 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-        captureButton = findViewById(R.id.captureButton);
+//        RadioButton radioCamera = findViewById(R.id.radioCamera);
+//        RadioButton radioVideo = findViewById(R.id.radioVideo);
+//        RadioGroup radioGroup = findViewById(R.id.radioGroup);
+//
+//        // Initial state setting
+//        radioCamera.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.camera, 0, 0);
+//        radioCamera.setBackgroundResource(R.drawable.bg_camera_selector);
+//        radioVideo.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.video, 0, 0);
+//        radioVideo.setBackgroundResource(R.drawable.bg_video_selector);
+//
+//        radioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+//            @Override
+//            public void onCheckedChanged(RadioGroup group, int checkedId) {
+//                if (checkedId == R.id.radioCamera) {
+//                    radioCamera.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.camera, 0, 0);
+//                    radioCamera.setBackgroundResource(R.drawable.bg_camera_selector);
+//                    radioVideo.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.video_gray, 0, 0);
+//                    radioVideo.setBackgroundResource(R.drawable.bg_video_selector);
+//                } else if (checkedId == R.id.radioVideo) {
+//                    radioVideo.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.video, 0, 0);
+//                    radioVideo.setBackgroundResource(R.drawable.bg_video_selector);
+//                    radioCamera.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.camera_gray, 0, 0);
+//                    radioCamera.setBackgroundResource(R.drawable.bg_camera_selector);
+//                }
+//            }
+//        });
+
+
         captureButton.setOnClickListener(v -> {
             Log.d(TAG, "Capture button clicked");
             capturePhoto(true);
