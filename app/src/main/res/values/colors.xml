@@ -8,4 +8,6 @@
     <color name="colorOrange">#FF5722</color>
     <color name="white">#FFF</color>
     <color name="translucent_black">#8000</color>
+    <color name="dark_blue">#1D212F</color>
+    <color name="bg_blue">#2E368E</color>
 </resources>

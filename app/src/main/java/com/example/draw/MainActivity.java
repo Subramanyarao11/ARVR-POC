@@ -26,7 +26,10 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.airbnb.lottie.LottieAnimationView;
@@ -137,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final double MIN_OPENGL_VERSION = 3.0;
 
-    private Button captureButton;
+    private ImageButton captureButton;
 
     private Node currentRectangleNode = null;
 
@@ -155,8 +158,6 @@ public class MainActivity extends AppCompatActivity {
     private VideoRecorder videoRecorder;
     private boolean isRecording = false;
 
-    private Button returnButton;
-
     private boolean updatePlaneDetectionOverlay = true;
 
     private boolean isAutoCapturing = false;
@@ -173,6 +174,13 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private ImageAdapter imageAdapter;
 
+    private Button ProceedButton;
+
+    private LinearLayout bottomBar;
+
+    private LinearLayout topBar;
+
+    private ImageButton closeButton;
 
 
 
@@ -221,9 +229,14 @@ public class MainActivity extends AppCompatActivity {
         btnDecreaseHeight = findViewById(R.id.btnDecreaseHeight);
         btnIncreaseHeight = findViewById(R.id.btnIncreaseHeight);
         heightControls = findViewById(R.id.heightControls);
+        TextView progressText = findViewById(R.id.progressText);
 
-        startRecordingButton = findViewById(R.id.startRecordingButton);
-        stopRecordingButton = findViewById(R.id.stopRecordingButton);
+//        startRecordingButton = findViewById(R.id.startRecordingButton);
+//        stopRecordingButton = findViewById(R.id.stopRecordingButton);
+        ProceedButton = findViewById(R.id.buttonContinue);
+        bottomBar = findViewById(R.id.bottomBar);
+        topBar = findViewById(R.id.topBar);
+        closeButton = findViewById(R.id.closeButton);
 
         lottieArrowLeft = findViewById(R.id.lottieArrowLeft);
         lottieArrowRight = findViewById(R.id.lottieArrowRight);
@@ -247,16 +260,16 @@ public class MainActivity extends AppCompatActivity {
             finish();
         });
 
-        startRecordingButton.setOnClickListener(v -> {
-            if (!arFragment.hasWritePermission()) {
-                Toast.makeText(this, "Permission required to start recording", Toast.LENGTH_SHORT).show();
-                arFragment.launchPermissionSettings();
-                return;
-            }
-            startRecording();
-        });
+//        startRecordingButton.setOnClickListener(v -> {
+//            if (!arFragment.hasWritePermission()) {
+//                Toast.makeText(this, "Permission required to start recording", Toast.LENGTH_SHORT).show();
+//                arFragment.launchPermissionSettings();
+//                return;
+//            }
+//            startRecording();
+//        });
 
-        stopRecordingButton.setOnClickListener(v -> stopRecording());
+//        stopRecordingButton.setOnClickListener(v -> stopRecording());
 
         // Set the initial height value to the SeekBar
         seekBarHeight.setProgress((int) (height * 10));
@@ -297,8 +310,82 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        ProceedButton.setOnClickListener(v-> {
+            ProceedButton.setVisibility(View.GONE);
+            topBar.setVisibility(View.VISIBLE);
+            lockHeightAdjustment();
+            lockNodeTransformations();
+            bottomBar.setVisibility(View.VISIBLE);
+        RadioButton radioCamera = findViewById(R.id.radioCamera);
+        RadioButton radioVideo = findViewById(R.id.radioVideo);
+        RadioGroup radioGroup = findViewById(R.id.radioGroup);
+        RadioGroup topButtons = findViewById(R.id.topButtons);
+        RadioButton radioAuto = findViewById(R.id.radioAuto);
+        RadioButton radioManual = findViewById(R.id.radioManual);
+        SimpleInstructionOverlay captureSimpleInstructionOverlay = findViewById(R.id.captureSimpleInstructionOverlay);
+        btnBack.setVisibility(View.GONE);
+        btnReset.setVisibility(View.GONE);
+        heightControls.setVisibility(View.GONE);
+        radioCamera.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.camera, 0, 0);
+        radioCamera.setBackgroundResource(R.drawable.bg_camera_selector);
+        radioVideo.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.video_gray, 0, 0);
+        radioVideo.setBackgroundResource(R.drawable.bg_video_selector);
 
-        captureButton = findViewById(R.id.captureButton);
+        radioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                if (checkedId == R.id.radioCamera) {
+                    radioCamera.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.camera, 0, 0);
+                    radioCamera.setBackgroundResource(R.drawable.bg_camera_selector);
+                    radioVideo.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.video_gray, 0, 0);
+                    radioVideo.setBackgroundResource(R.drawable.bg_video_selector);
+                } else if (checkedId == R.id.radioVideo) {
+                    radioVideo.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.video, 0, 0);
+                    radioVideo.setBackgroundResource(R.drawable.bg_video_selector);
+                    radioCamera.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.camera_gray, 0, 0);
+                    radioCamera.setBackgroundResource(R.drawable.bg_camera_selector);
+                }
+            }
+        });
+
+            topButtons.setOnCheckedChangeListener((group, checkedId) -> {
+                if (checkedId == R.id.radioAuto) {
+                    radioAuto.setTextColor(getResources().getColor(android.R.color.white));
+                    radioManual.setTextColor(getResources().getColor(R.color.bg_blue));
+                } else if (checkedId == R.id.radioManual) {
+                    radioManual.setTextColor(getResources().getColor(android.R.color.white));
+                    radioAuto.setTextColor(getResources().getColor(R.color.bg_blue));
+                }
+            });
+
+
+            captureSimpleInstructionOverlay.setVisibility(View.VISIBLE);
+            captureSimpleInstructionOverlay.setText("You can switch between auto and manual capturing mode");
+            progressText.setVisibility(View.GONE);
+
+            new Handler().postDelayed(() -> {
+                captureSimpleInstructionOverlay.setVisibility(View.GONE);
+                progressText.setVisibility(View.VISIBLE);
+                showVisualsForShortDuration();
+            }, 3000);
+
+        });
+
+
+
+
+        closeButton.setOnClickListener(v -> {
+            unlockHeightAdjustment();
+            unlockNodeTransformations();
+            topBar.setVisibility(View.GONE);
+            bottomBar.setVisibility(View.GONE);
+            btnBack.setVisibility(View.VISIBLE);
+            btnReset.setVisibility(View.VISIBLE);
+            progressText.setVisibility(View.GONE);
+            recyclerView.setVisibility(View.GONE);
+        });
+
+        captureButton = findViewById(R.id.shutter);
         captureButton.setOnClickListener(v -> {
             Log.d(TAG, "Capture button clicked");
             capturePhoto(true);
@@ -383,6 +470,7 @@ public class MainActivity extends AppCompatActivity {
                         new Handler(Looper.getMainLooper()).postDelayed(() -> {
                             updatePlaneDetectionOverlay = true;
                             findViewById(R.id.instructionOverlay).setVisibility(View.GONE);
+                            showControls();
                         }, 3000);
                         break;
                 }
@@ -400,13 +488,6 @@ public class MainActivity extends AppCompatActivity {
         int orientation = getResources().getConfiguration().orientation;
         videoRecorder.setVideoQuality(CamcorderProfile.QUALITY_720P, orientation);
         videoRecorder.setSceneView(arFragment.getArSceneView());
-
-
-        returnButton = findViewById(R.id.returnButton);
-        returnButton.setOnClickListener(v -> {
-            restoreInitialUI();
-            unlockHeightAdjustment();
-        });
     }
 
     @Override
@@ -458,7 +539,7 @@ public class MainActivity extends AppCompatActivity {
         Quaternion rotation = Quaternion.lookRotation(edgeDirection, Vector3.up());
 //        float height = 0.1f;
         updateRectangle(rectangleCenter, width, height, Math.abs(depth), rotation);
-        showControls();
+//        showControls();
         showCaptureButton();
 
     }
@@ -538,21 +619,8 @@ public class MainActivity extends AppCompatActivity {
     private void capturePhoto(boolean showVisuals) {
         lockHeightAdjustment();
         hideARFeatures();
-        if (showVisuals) {
-            showVisualsForShortDuration();
-            // Perform capture after the delay
-            new Handler(Looper.getMainLooper()).postDelayed(this::captureAndProcessImage, 3500);
-        }
-        else {
-            // No visuals to show, just delay the capture slightly to ensure UI consistency
-            // New Handler(Looper.getMainLooper()).postDelayed(this::captureAndProcessImage, 100);
-            // changed it to 3500 so that when we come from autoCapture flow we show animation correctly and then capture
-            new Handler(Looper.getMainLooper()).postDelayed(this::captureAndProcessImage, 3500);
-        }
+        captureAndProcessImage();
         disableCaptureButton();
-        returnButton.setVisibility(View.VISIBLE);
-        // commented out as it was being used earlier
-//        new Handler(Looper.getMainLooper()).postDelayed(this::captureAndCropWithBoundsCalculation, 100);
     }
 
     private void captureAndProcessImage() {
@@ -670,7 +738,7 @@ public class MainActivity extends AppCompatActivity {
             connectingLine.hideLine();
         }
         hideRectangle();
-        startRecordingButton.setVisibility(View.GONE);
+//        startRecordingButton.setVisibility(View.GONE);
     }
 
 
@@ -702,16 +770,16 @@ public class MainActivity extends AppCompatActivity {
 
     private void showStartRecordingButton() {
         runOnUiThread(() -> {
-            startRecordingButton.setVisibility(View.VISIBLE);
-            stopRecordingButton.setVisibility(View.GONE);
+//            startRecordingButton.setVisibility(View.VISIBLE);
+//            stopRecordingButton.setVisibility(View.GONE);
         });
     }
 
     private void showStopRecordingButton() {
-        runOnUiThread(() -> {
-            startRecordingButton.setVisibility(View.GONE);
-            stopRecordingButton.setVisibility(View.VISIBLE);
-        });
+//        runOnUiThread(() -> {
+//            startRecordingButton.setVisibility(View.GONE);
+//            stopRecordingButton.setVisibility(View.VISIBLE);
+//        });
     }
 
     private void showControls() {
@@ -807,13 +875,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showStartAutoCaptureButton() {
-        Button btn = findViewById(R.id.autoCaptureButton);
-        btn.setText("Start Auto Capture");
+//        Button btn = findViewById(R.id.autoCaptureButton);
+//        btn.setText("Start Auto Capture");
     }
 
     private void showStopAutoCaptureButton() {
-        Button btn = findViewById(R.id.autoCaptureButton);
-        btn.setText("Stop Auto Capture");
+//        Button btn = findViewById(R.id.autoCaptureButton);
+//        btn.setText("Stop Auto Capture");
     }
 
 
@@ -890,9 +958,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void restoreInitialUI() {
         captureButton.setVisibility(View.VISIBLE);
-        startRecordingButton.setVisibility(View.VISIBLE);
-        stopRecordingButton.setVisibility(View.GONE);
-        returnButton.setVisibility(View.GONE);
+//        startRecordingButton.setVisibility(View.VISIBLE);
+//        stopRecordingButton.setVisibility(View.GONE);
+//        returnButton.setVisibility(View.GONE);
         restoreARFeatures();
     }
 

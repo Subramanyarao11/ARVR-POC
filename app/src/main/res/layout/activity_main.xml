@@ -26,6 +26,7 @@
         android:layout_marginStart="16dp"
         android:layout_alignParentTop="true"
         android:layout_alignParentStart="true"
+        android:visibility="visible"
         android:padding="0dp"
         android:scaleType="center"
         android:elevation="6dp" />
@@ -41,9 +42,12 @@
         android:layout_marginEnd="16dp"
         android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true"
+        android:visibility="visible"
         android:padding="0dp"
         android:scaleType="center"
         android:elevation="6dp" />
+
+
 
     <fragment
         android:id="@+id/arFragment"
@@ -53,13 +57,133 @@
 
     <!-- Instructional Overlay at the Top -->
 
+
     <com.example.draw.InstructionOverlay
         android:id="@+id/instructionOverlay"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_marginHorizontal="10dp"
-        android:layout_marginTop="70dp" />
+        android:layout_marginTop="86dp" />
+
+    <LinearLayout
+        android:id="@+id/topBar"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginStart="0dp">
+
+        <ImageButton
+            android:id="@+id/questionButton"
+            android:gravity="start"
+            android:layout_width="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="10dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Help"
+            android:elevation="6dp"
+            android:src="@drawable/question"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <LinearLayout
+            android:layout_weight="1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:background="@drawable/corner_radius"
+                android:orientation="horizontal"
+                android:padding="5dp">
+
+                <RadioGroup
+                    android:id="@+id/topButtons"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:orientation="horizontal">
+
+                    <!-- Auto Option -->
+                    <RadioButton
+                        android:id="@+id/radioAuto"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/radio_button_text_selector"
+                        android:button="@null"
+                        android:checked="true"
+                        android:padding="8dp"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:text="Auto"
+                        android:textColor="@android:color/white" />
+
+                    <!-- Manual Option -->
+                    <RadioButton
+                        android:id="@+id/radioManual"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/radio_button_text_selector"
+                        android:button="@null"
+                        android:padding="8dp"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:text="Manual"
+                        android:textColor="@color/bg_blue" />
+
+                </RadioGroup>
+            </LinearLayout>
+
+        </LinearLayout>
+
+
+        <ImageButton
+            android:id="@+id/closeButton"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:layout_marginEnd="10dp"
+            android:layout_marginTop="10dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Close"
+            android:elevation="10dp"
+            android:src="@drawable/cta"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/progressText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0/24"
+        android:textSize="14sp"
+        android:background="@drawable/progress_bg"
+        android:textColor="#000000"
+        android:padding="10dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="10dp"
+        android:layout_below="@id/topBar"
+        android:layout_alignEnd="@id/topBar"
+        android:visibility="gone"
+        android:elevation="6dp" />
+
+
+    <com.example.draw.SimpleInstructionOverlay
+        android:id="@+id/captureSimpleInstructionOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/topBar"
+        android:layout_marginHorizontal="10dp"
+        android:layout_marginTop="12dp"
+        android:visibility="gone" />
+
+
 
 
 
@@ -68,7 +192,7 @@
         android:id="@+id/simpleInstructionOverlay"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@id/heightControls"
+        android:layout_above="@id/bottomBar"
         android:layout_marginHorizontal="10dp"
         android:layout_marginBottom="10dp"
         android:visibility="gone" />
@@ -112,7 +236,7 @@
         android:id="@+id/imageCarousel"
         android:layout_width="match_parent"
         android:layout_height="100dp"
-        android:layout_above="@id/heightControls"
+        android:layout_above="@id/bottomBar"
         android:layout_margin="8dp"
         android:background="@android:color/white"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
@@ -131,44 +255,44 @@
         android:visibility="invisible"
         android:padding="16dp">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center">
+        <!--        <LinearLayout-->
+        <!--            android:layout_width="match_parent"-->
+        <!--            android:layout_height="wrap_content"-->
+        <!--            android:orientation="horizontal"-->
+        <!--            android:gravity="center">-->
 
-            <Button
-                android:id="@+id/captureButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Capture Photo" />
+        <!--            <Button-->
+        <!--                android:id="@+id/captureButton"-->
+        <!--                android:layout_width="0dp"-->
+        <!--                android:layout_height="wrap_content"-->
+        <!--                android:layout_weight="1"-->
+        <!--                android:text="Capture Photo" />-->
 
-            <Button
-                android:id="@+id/autoCaptureButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Auto Capture"
-                android:onClick="onAutoCaptureClicked"
-                />
+        <!--            <Button-->
+        <!--                android:id="@+id/autoCaptureButton"-->
+        <!--                android:layout_width="0dp"-->
+        <!--                android:layout_height="wrap_content"-->
+        <!--                android:layout_weight="1"-->
+        <!--                android:text="Auto Capture"-->
+        <!--                android:onClick="onAutoCaptureClicked"-->
+        <!--                />-->
 
-            <Button
-                android:id="@+id/startRecordingButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Start Recording" />
+        <!--            <Button-->
+        <!--                android:id="@+id/startRecordingButton"-->
+        <!--                android:layout_width="0dp"-->
+        <!--                android:layout_height="wrap_content"-->
+        <!--                android:layout_weight="1"-->
+        <!--                android:text="Start Recording" />-->
 
-            <Button
-                android:id="@+id/stopRecordingButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Stop Recording"
-                android:visibility="gone" />
+        <!--            <Button-->
+        <!--                android:id="@+id/stopRecordingButton"-->
+        <!--                android:layout_width="0dp"-->
+        <!--                android:layout_height="wrap_content"-->
+        <!--                android:layout_weight="1"-->
+        <!--                android:text="Stop Recording"-->
+        <!--                android:visibility="gone" />-->
 
-        </LinearLayout>
+        <!--        </LinearLayout>-->
 
         <SeekBar
             android:id="@+id/seekBarHeight"
@@ -196,6 +320,92 @@
                 android:text="+" />
 
         </LinearLayout>
+
+
+        <Button
+            android:id="@+id/buttonContinue"
+            android:layout_width="wrap_content"
+            android:layout_gravity="center"
+            android:layout_height="wrap_content"
+            android:background="@drawable/proceed_bg"
+            android:text="Proceed"
+            android:textColor="#FFFFFF" />
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:id="@+id/bottomBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#1D212F"
+        android:gravity="center_vertical"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
+        android:visibility="gone"
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@color/white"
+            android:orientation="vertical">
+
+            <RadioGroup
+                android:id="@+id/radioGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:padding="4dp">
+
+                <RadioButton
+                    android:id="@+id/radioCamera"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_camera_selector"
+                    android:button="@null"
+                    android:checked="true"
+                    android:drawableTop="@drawable/camera_gray"
+                    android:padding="10dp" />
+
+                <RadioButton
+                    android:id="@+id/radioVideo"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_video_selector"
+                    android:button="@null"
+                    android:drawableTop="@drawable/video_gray"
+                    android:padding="10dp" />
+            </RadioGroup>
+
+        </LinearLayout>
+
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <ImageButton
+            android:id="@+id/shutter"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:background="@drawable/shutter"
+            android:contentDescription="Capture" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <Button
+            android:id="@+id/proceedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/proceed_bg"
+            android:text="Proceed"
+            android:textColor="#FFFFFF" />
     </LinearLayout>
 
 </RelativeLayout>
