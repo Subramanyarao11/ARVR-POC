@@ -112,7 +112,7 @@
 
                     <!-- Auto Option -->
                     <RadioButton
-                        android:id="@+id/radioAuto"
+                        android:id="@+id/radioManual"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:background="@drawable/radio_button_text_selector"
@@ -121,12 +121,12 @@
                         android:padding="8dp"
                         android:paddingStart="16dp"
                         android:paddingEnd="16dp"
-                        android:text="Auto"
+                        android:text="Manual"
                         android:textColor="@android:color/white" />
 
                     <!-- Manual Option -->
                     <RadioButton
-                        android:id="@+id/radioManual"
+                        android:id="@+id/radioAuto"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:background="@drawable/radio_button_text_selector"
@@ -134,7 +134,7 @@
                         android:padding="8dp"
                         android:paddingStart="16dp"
                         android:paddingEnd="16dp"
-                        android:text="Manual"
+                        android:text="Auto"
                         android:textColor="@color/bg_blue" />
 
                 </RadioGroup>
@@ -161,7 +161,8 @@
         android:id="@+id/progressText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="0/24"
+        android:gravity="center"
+        android:text="0"
         android:textSize="14sp"
         android:background="@drawable/progress_bg"
         android:textColor="#000000"
@@ -255,69 +256,40 @@
         android:visibility="invisible"
         android:padding="16dp">
 
-        <!--        <LinearLayout-->
-        <!--            android:layout_width="match_parent"-->
-        <!--            android:layout_height="wrap_content"-->
-        <!--            android:orientation="horizontal"-->
-        <!--            android:gravity="center">-->
-
-        <!--            <Button-->
-        <!--                android:id="@+id/captureButton"-->
-        <!--                android:layout_width="0dp"-->
-        <!--                android:layout_height="wrap_content"-->
-        <!--                android:layout_weight="1"-->
-        <!--                android:text="Capture Photo" />-->
-
-        <!--            <Button-->
-        <!--                android:id="@+id/autoCaptureButton"-->
-        <!--                android:layout_width="0dp"-->
-        <!--                android:layout_height="wrap_content"-->
-        <!--                android:layout_weight="1"-->
-        <!--                android:text="Auto Capture"-->
-        <!--                android:onClick="onAutoCaptureClicked"-->
-        <!--                />-->
-
-        <!--            <Button-->
-        <!--                android:id="@+id/startRecordingButton"-->
-        <!--                android:layout_width="0dp"-->
-        <!--                android:layout_height="wrap_content"-->
-        <!--                android:layout_weight="1"-->
-        <!--                android:text="Start Recording" />-->
-
-        <!--            <Button-->
-        <!--                android:id="@+id/stopRecordingButton"-->
-        <!--                android:layout_width="0dp"-->
-        <!--                android:layout_height="wrap_content"-->
-        <!--                android:layout_weight="1"-->
-        <!--                android:text="Stop Recording"-->
-        <!--                android:visibility="gone" />-->
-
-        <!--        </LinearLayout>-->
-
         <SeekBar
             android:id="@+id/seekBarHeight"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:max="90"
-            android:progress="10" />
+            android:progress="10"
+            android:maxHeight="10dp"
+            android:progressDrawable="@drawable/seekbar_style"
+            android:thumb="@drawable/custom_thumb"
+            />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="10dp"
             android:gravity="center">
 
             <Button
                 android:id="@+id/btnDecreaseHeight"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="-" />
+                android:text="-"
+                android:textColor="@color/bg_blue"
+                />
 
             <Button
                 android:id="@+id/btnIncreaseHeight"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="+" />
+                android:text="+"
+                android:textColor="@color/bg_blue"
+                />
 
         </LinearLayout>
 
@@ -327,9 +299,9 @@
             android:layout_width="wrap_content"
             android:layout_gravity="center"
             android:layout_height="wrap_content"
-            android:background="@drawable/proceed_bg"
+            android:background="@drawable/init_proceed_bg"
             android:text="Proceed"
-            android:textColor="#FFFFFF" />
+            android:textColor="@color/white" />
     </LinearLayout>
 
 
@@ -348,7 +320,7 @@
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@color/white"
+            android:background="@drawable/corner_radius"
             android:orientation="vertical">
 
             <RadioGroup
@@ -363,7 +335,7 @@
                     android:id="@+id/radioCamera"
                     android:layout_width="48dp"
                     android:layout_height="48dp"
-                    android:background="@drawable/bg_camera_selector"
+                    android:background="@drawable/bg_selector"
                     android:button="@null"
                     android:checked="true"
                     android:drawableTop="@drawable/camera_gray"
@@ -373,7 +345,7 @@
                     android:id="@+id/radioVideo"
                     android:layout_width="48dp"
                     android:layout_height="48dp"
-                    android:background="@drawable/bg_video_selector"
+                    android:background="@drawable/bg_selector"
                     android:button="@null"
                     android:drawableTop="@drawable/video_gray"
                     android:padding="10dp" />

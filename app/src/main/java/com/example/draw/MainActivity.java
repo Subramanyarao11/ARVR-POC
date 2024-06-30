@@ -182,6 +182,12 @@ public class MainActivity extends AppCompatActivity {
 
     private ImageButton closeButton;
 
+    private TextView progressText;
+
+    // Auto Manual Function trigger, here 1 is for manual & 2 is for auto capture
+    private int isCheckedType = 1;
+    // used for identifying video or camera type, here 1 is for camera & 2 is for video rec
+    private int isVideoPlayBtn = 1;
 
 
 
@@ -229,7 +235,7 @@ public class MainActivity extends AppCompatActivity {
         btnDecreaseHeight = findViewById(R.id.btnDecreaseHeight);
         btnIncreaseHeight = findViewById(R.id.btnIncreaseHeight);
         heightControls = findViewById(R.id.heightControls);
-        TextView progressText = findViewById(R.id.progressText);
+        progressText = findViewById(R.id.progressText);
 
 //        startRecordingButton = findViewById(R.id.startRecordingButton);
 //        stopRecordingButton = findViewById(R.id.stopRecordingButton);
@@ -316,6 +322,7 @@ public class MainActivity extends AppCompatActivity {
             lockHeightAdjustment();
             lockNodeTransformations();
             bottomBar.setVisibility(View.VISIBLE);
+             captureButton.setEnabled(false);
         RadioButton radioCamera = findViewById(R.id.radioCamera);
         RadioButton radioVideo = findViewById(R.id.radioVideo);
         RadioGroup radioGroup = findViewById(R.id.radioGroup);
@@ -327,32 +334,42 @@ public class MainActivity extends AppCompatActivity {
         btnReset.setVisibility(View.GONE);
         heightControls.setVisibility(View.GONE);
         radioCamera.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.camera, 0, 0);
-        radioCamera.setBackgroundResource(R.drawable.bg_camera_selector);
+        radioCamera.setBackgroundResource(R.drawable.bg_selector);
         radioVideo.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.video_gray, 0, 0);
-        radioVideo.setBackgroundResource(R.drawable.bg_video_selector);
+        radioVideo.setBackgroundResource(R.drawable.bg_selector);
 
         radioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(RadioGroup group, int checkedId) {
                 if (checkedId == R.id.radioCamera) {
+                    isCheckedType = 1;
+                    progressText.setVisibility(View.VISIBLE);
+                    capturedImages.clear();
+                    progressText.setText("0");
                     radioCamera.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.camera, 0, 0);
-                    radioCamera.setBackgroundResource(R.drawable.bg_camera_selector);
+                    radioCamera.setBackgroundResource(R.drawable.bg_selector);
                     radioVideo.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.video_gray, 0, 0);
-                    radioVideo.setBackgroundResource(R.drawable.bg_video_selector);
+                    radioVideo.setBackgroundResource(R.drawable.bg_selector);
                 } else if (checkedId == R.id.radioVideo) {
+                    isCheckedType = 3;
+                    progressText.setVisibility(View.GONE);
+                    recyclerView.setVisibility(View.GONE);
+                    capturedImages.clear();
                     radioVideo.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.video, 0, 0);
-                    radioVideo.setBackgroundResource(R.drawable.bg_video_selector);
+                    radioVideo.setBackgroundResource(R.drawable.bg_selector);
                     radioCamera.setCompoundDrawablesWithIntrinsicBounds(0, R.drawable.camera_gray, 0, 0);
-                    radioCamera.setBackgroundResource(R.drawable.bg_camera_selector);
+                    radioCamera.setBackgroundResource(R.drawable.bg_selector);
                 }
             }
         });
 
             topButtons.setOnCheckedChangeListener((group, checkedId) -> {
                 if (checkedId == R.id.radioAuto) {
+                    isCheckedType = 2;
                     radioAuto.setTextColor(getResources().getColor(android.R.color.white));
                     radioManual.setTextColor(getResources().getColor(R.color.bg_blue));
                 } else if (checkedId == R.id.radioManual) {
+                    isCheckedType = 1;
                     radioManual.setTextColor(getResources().getColor(android.R.color.white));
                     radioAuto.setTextColor(getResources().getColor(R.color.bg_blue));
                 }
@@ -367,14 +384,18 @@ public class MainActivity extends AppCompatActivity {
                 captureSimpleInstructionOverlay.setVisibility(View.GONE);
                 progressText.setVisibility(View.VISIBLE);
                 showVisualsForShortDuration();
-            }, 3000);
 
+                new Handler().postDelayed(() -> {
+                    captureButton.setEnabled(true);
+                }, 3000);
+            }, 3000);
         });
 
 
 
 
         closeButton.setOnClickListener(v -> {
+            ProceedButton.setVisibility(View.VISIBLE);
             unlockHeightAdjustment();
             unlockNodeTransformations();
             topBar.setVisibility(View.GONE);
@@ -383,29 +404,34 @@ public class MainActivity extends AppCompatActivity {
             btnReset.setVisibility(View.VISIBLE);
             progressText.setVisibility(View.GONE);
             recyclerView.setVisibility(View.GONE);
+            heightControls.setVisibility(View.VISIBLE);
         });
 
         captureButton = findViewById(R.id.shutter);
         captureButton.setOnClickListener(v -> {
-            Log.d(TAG, "Capture button clicked");
-            capturePhoto(true);
+            if(isCheckedType == 1){
+                Log.d(TAG, "Manual Capture button clicked");
+                capturePhoto();
+            } else if(isCheckedType == 2) {
+                Log.d(TAG, "Auto Capture button clicked");
+                onAutoCaptureClicked();
+            } else if(isCheckedType == 3) {
+                if(isVideoPlayBtn == 1) {
+                    startRecording();
+                    isVideoPlayBtn = 2;
+                    progressText.setVisibility(View.GONE);
+                    captureButton.setImageResource(R.drawable.stop);
+                } else if(isVideoPlayBtn == 2){
+                    isVideoPlayBtn = 1;
+                    stopRecording();
+                    captureButton.setImageResource(R.drawable.shutter);
+                }
+            }
         });
 
         arFragment = (WritingArFragment) getSupportFragmentManager().findFragmentById(R.id.arFragment);
         assert arFragment != null;
         ArSceneView arSceneView = arFragment.getArSceneView();
-
-//        ModelRenderable.builder()
-//                .setSource(this, R.raw.cube)
-////                    .setIsFilamentGltf(true)
-//                .build()
-//                .thenAccept(renderable -> andyRenderable = renderable)
-//                .exceptionally(throwable -> {
-//                    Log.e(TAG, "Unable to load ModelRenderable", throwable);
-//                    Toast.makeText(MainActivity.this, "Unable to load model", Toast.LENGTH_SHORT).show();
-//                    return null;
-//                });
-
 
         MaterialFactory.makeOpaqueWithColor(this, new Color(android.graphics.Color.BLUE))
                 .thenAccept(material -> {
@@ -418,8 +444,6 @@ public class MainActivity extends AppCompatActivity {
                     return null;
                 });
 
-
-//
         arFragment.setOnTapArPlaneListener((hitResult, plane, motionEvent) -> {
             if (andyRenderable == null) {
                 return;
@@ -449,7 +473,6 @@ public class MainActivity extends AppCompatActivity {
             TransformableNode andy = new TransformableNode(arFragment.getTransformationSystem());
             andy.setParent(anchorNode);
             andy.setRenderable(andyRenderable);
-//            andy.setLocalScale(new Vector3(0.05f, 0.05f, 0.05f));
             andy.setLocalScale(new Vector3(0.5f, 0.5f, 0.5f));
             andy.select();
             andy.getScaleController().setEnabled(false);
@@ -490,13 +513,14 @@ public class MainActivity extends AppCompatActivity {
         videoRecorder.setSceneView(arFragment.getArSceneView());
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (isRecording) {
-            stopRecording();
-        }
-    }
+//    @Override
+//    protected void onPause() {
+//        Toast.makeText(this, "onPause", Toast.LENGTH_SHORT).show();
+//        super.onPause();
+//        if (isRecording) {
+//            stopRecording();
+//        }
+//    }
 
     private void calculateRectangle() {
         if (anchorNodes.size() < 3) {
@@ -616,11 +640,12 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    private void capturePhoto(boolean showVisuals) {
+    private void capturePhoto() {
         lockHeightAdjustment();
         hideARFeatures();
-        captureAndProcessImage();
+//        captureAndProcessImage();
         disableCaptureButton();
+        new Handler(Looper.getMainLooper()).postDelayed(this::captureAndCropWithBoundsCalculation, 100);
     }
 
     private void captureAndProcessImage() {
@@ -712,6 +737,7 @@ public class MainActivity extends AppCompatActivity {
             try (OutputStream out = getContentResolver().openOutputStream(uri)) {
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
                 capturedImages.add(bitmap);
+                progressText.setText(String.valueOf(capturedImages.size()));
                 if (imageAdapter != null) {
                     runOnUiThread(() -> {
                         imageAdapter.notifyDataSetChanged();
@@ -720,7 +746,6 @@ public class MainActivity extends AppCompatActivity {
                     });
                 }
                 Log.d(TAG, "Photo saved to " + uri.toString());
-                runOnUiThread(() -> Toast.makeText(MainActivity.this, "Photo saved to " + uri.toString(), Toast.LENGTH_LONG).show());
             } catch (IOException e) {
                 Log.e(TAG, "Unable to save image to file.", e);
                 runOnUiThread(() -> Toast.makeText(MainActivity.this, "Failed to save photo", Toast.LENGTH_SHORT).show());
@@ -768,19 +793,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void showStartRecordingButton() {
-        runOnUiThread(() -> {
-//            startRecordingButton.setVisibility(View.VISIBLE);
-//            stopRecordingButton.setVisibility(View.GONE);
-        });
-    }
 
-    private void showStopRecordingButton() {
-//        runOnUiThread(() -> {
-//            startRecordingButton.setVisibility(View.GONE);
-//            stopRecordingButton.setVisibility(View.VISIBLE);
-//        });
-    }
+
 
     private void showControls() {
         runOnUiThread(() -> {
@@ -843,12 +857,14 @@ public class MainActivity extends AppCompatActivity {
         unlockNodeTransformations();
     }
 
-    public void onAutoCaptureClicked(View view) {
+    public void onAutoCaptureClicked() {
         if (!isAutoCapturing) {
-            showVisualsForShortDuration();
+//            showVisualsForShortDuration();
             startAutoCapture();
+            captureButton.setImageResource(R.drawable.pause);
         } else {
             stopAutoCapture();
+            captureButton.setImageResource(R.drawable.shutter);
         }
     }
 
@@ -858,45 +874,28 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 if (isAutoCapturing) {
-                    capturePhoto(false);
+                    capturePhoto();
                     autoCaptureHandler.postDelayed(this, 5000);
                 }
             }
         };
         autoCaptureRunnable.run();
-        showStopAutoCaptureButton();
     }
 
     private void stopAutoCapture() {
         isAutoCapturing = false;
         autoCaptureHandler.removeCallbacks(autoCaptureRunnable);
-        showStartAutoCaptureButton();
         visualsShown=false;
     }
-
-    private void showStartAutoCaptureButton() {
-//        Button btn = findViewById(R.id.autoCaptureButton);
-//        btn.setText("Start Auto Capture");
-    }
-
-    private void showStopAutoCaptureButton() {
-//        Button btn = findViewById(R.id.autoCaptureButton);
-//        btn.setText("Stop Auto Capture");
-    }
-
-
-
-
 
 
 
     private void startRecording() {
         if (!isRecording) {
-            showVisualsForShortDuration();
+//            showVisualsForShortDuration();
             hideARFeatures();
             lockHeightAdjustment();
             isRecording = videoRecorder.onToggleRecord();
-            showStopRecordingButton();
         }
     }
 
@@ -909,30 +908,15 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-
-//    private void stopRecording() {
-//        if (isRecording) {
-//            isRecording = !videoRecorder.onToggleRecord();
-//            restoreARFeatures();
-//            showStartRecordingButton();
-//            saveVideoPathToMediaStore(videoRecorder.getVideoPath().getAbsolutePath());
-//        }
-//    }
-
     private void stopRecording() {
         if (isRecording) {
             isRecording = !videoRecorder.onToggleRecord();
             restoreARFeatures();
             unlockHeightAdjustment();
-            showStartRecordingButton();
             visualsShown = false;
-            // Get the video file path
             String videoPath = videoRecorder.getVideoPath().getAbsolutePath();
-
-            // Check if the video file exists and is not empty
             File videoFile = new File(videoPath);
             if (videoFile.exists() && videoFile.length() > 0) {
-                // Use MediaScannerConnection to scan the video file
                 MediaScannerConnection.scanFile(MainActivity.this, new String[] { videoPath }, null, null);
             } else {
                 Log.e(TAG, "Video file does not exist or is empty: " + videoPath);
@@ -940,29 +924,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void saveVideoPathToMediaStore(String videoPath) {
-        File videoFile = new File(videoPath);
-        if (videoFile.exists() && videoFile.length() > 0) {
-            ContentValues values = new ContentValues();
-            values.put(MediaStore.Video.Media.TITLE, "Sceneform Video");
-            values.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
-            values.put(MediaStore.Video.Media.DATA, videoPath);
-            Uri uri = getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
-            if (uri != null) {
-                Toast.makeText(this, "Video saved: " + videoPath, Toast.LENGTH_SHORT).show();
-            }
-        } else {
-            Log.e(TAG, "Video file does not exist or is empty: " + videoPath);
-        }
-    }
 
-    private void restoreInitialUI() {
-        captureButton.setVisibility(View.VISIBLE);
-//        startRecordingButton.setVisibility(View.VISIBLE);
-//        stopRecordingButton.setVisibility(View.GONE);
-//        returnButton.setVisibility(View.GONE);
-        restoreARFeatures();
-    }
+
 
     private void updateInstructionOverlay(String heading, String text, int iconResId) {
         Log.d(TAG, "Updating overlay to: " + heading + " / " + text);
