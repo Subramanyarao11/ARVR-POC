@@ -1,6 +1,7 @@
 package com.example.draw;
 
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -12,6 +13,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.graphics.drawable.ColorDrawable;
 import android.media.CamcorderProfile;
 import android.net.Uri;
 import android.os.Bundle;
@@ -31,6 +33,7 @@ import android.widget.RadioGroup;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
+
 
 import com.airbnb.lottie.LottieAnimationView;
 import com.google.ar.core.Anchor;
@@ -364,14 +367,20 @@ public class MainActivity extends AppCompatActivity {
         });
 
             topButtons.setOnCheckedChangeListener((group, checkedId) -> {
-                if (checkedId == R.id.radioAuto) {
-                    isCheckedType = 2;
-                    radioAuto.setTextColor(getResources().getColor(android.R.color.white));
-                    radioManual.setTextColor(getResources().getColor(R.color.bg_blue));
-                } else if (checkedId == R.id.radioManual) {
-                    isCheckedType = 1;
-                    radioManual.setTextColor(getResources().getColor(android.R.color.white));
-                    radioAuto.setTextColor(getResources().getColor(R.color.bg_blue));
+                if (isAutoCapturing && checkedId == R.id.radioManual) {
+                    Log.d(TAG, "Manual Capture button clicked");
+                    showPauseAutoCapturePopup();
+                    group.check(R.id.radioAuto);
+                } else {
+                    if (checkedId == R.id.radioAuto) {
+                        isCheckedType = 2;
+                        radioAuto.setTextColor(getResources().getColor(android.R.color.white));
+                        radioManual.setTextColor(getResources().getColor(R.color.bg_blue));
+                    } else if (checkedId == R.id.radioManual) {
+                        isCheckedType = 1;
+                        radioManual.setTextColor(getResources().getColor(android.R.color.white));
+                        radioAuto.setTextColor(getResources().getColor(R.color.bg_blue));
+                    }
                 }
             });
 
@@ -395,17 +404,24 @@ public class MainActivity extends AppCompatActivity {
 
 
         closeButton.setOnClickListener(v -> {
-            ProceedButton.setVisibility(View.VISIBLE);
-            unlockHeightAdjustment();
-            unlockNodeTransformations();
-            topBar.setVisibility(View.GONE);
-            bottomBar.setVisibility(View.GONE);
-            btnBack.setVisibility(View.VISIBLE);
-            btnReset.setVisibility(View.VISIBLE);
-            progressText.setVisibility(View.GONE);
-            recyclerView.setVisibility(View.GONE);
-            heightControls.setVisibility(View.VISIBLE);
+            if (isAutoCapturing) {
+                showPauseAutoCapturePopup();
+            } else {
+                ProceedButton.setVisibility(View.VISIBLE);
+                unlockHeightAdjustment();
+                unlockNodeTransformations();
+                capturedImages.clear();
+                progressText.setText("0");
+                topBar.setVisibility(View.GONE);
+                bottomBar.setVisibility(View.GONE);
+                btnBack.setVisibility(View.VISIBLE);
+                btnReset.setVisibility(View.VISIBLE);
+                progressText.setVisibility(View.GONE);
+                recyclerView.setVisibility(View.GONE);
+                heightControls.setVisibility(View.VISIBLE);
+            }
         });
+
 
         captureButton = findViewById(R.id.shutter);
         captureButton.setOnClickListener(v -> {
@@ -567,6 +583,21 @@ public class MainActivity extends AppCompatActivity {
         showCaptureButton();
 
     }
+
+    private void showPauseAutoCapturePopup() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View customView = getLayoutInflater().inflate(R.layout.custom_dialog_layout, null);
+        builder.setView(customView);
+
+        AlertDialog dialog = builder.create();
+        Objects.requireNonNull(dialog.getWindow()).setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
+
+        Button btnProceed = customView.findViewById(R.id.btnProceed);
+        btnProceed.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+    }
+
 
     private void updateRectangle(Vector3 center, float width, float height, float depth, Quaternion rotation) {
         Vector3 dimensions = new Vector3(width, height, depth);  // Create a new Vector3 for dimensions

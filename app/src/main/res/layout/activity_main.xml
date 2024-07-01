@@ -236,10 +236,10 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/imageCarousel"
         android:layout_width="match_parent"
-        android:layout_height="100dp"
+        android:layout_height="60dp"
         android:layout_above="@id/bottomBar"
         android:layout_margin="8dp"
-        android:background="@android:color/white"
+        android:background="@android:color/transparent"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
         android:orientation="horizontal"
         android:scrollbars="horizontal"
